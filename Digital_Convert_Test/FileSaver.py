@@ -8,6 +8,7 @@ from matplotlib import style
 import numpy as np
 import time
 from datetime import datetime as dt
+from scipy.stats import binned_statistic
 
 #basic setup 
 #arduino_port = "COM3" #serial port of Arduino
@@ -16,7 +17,7 @@ baud = 9600 #arduino uno runs at 9600 baud
 
 
 #get directory path
-dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = os.path.dirname(os.path.realpath(__file__)) + "/DataAcquisition"
 
 #change file directory to dir_path
 os.chdir(dir_path)
@@ -104,6 +105,7 @@ print(acquisition_time)
 base_filename    = "analog-data.csv" #name of the CSV file generated
 n_acquisitions   = int(n_acquisitions) #number of acquisitions
 acquisition_time = int(acquisition_time) #seconds
+n_bins = 8 #number of bins for histogram
 n=0 #counter
 
 print("Collecting data for " + str(acquisition_time) + " seconds")
@@ -114,6 +116,19 @@ print("Connected to Arduino port: " + arduino_port)
 
 #initialize array containing all acquired arrays as an numpy array
 data_arr = np.array([])
+hist_data= np.array([])
+
+
+#set up plot
+figure, ax = plt.subplots()
+ax.set_title("Histogram of Analog Data")
+ax.set_xlabel("Channel")
+ax.set_ylabel("Frequency")
+ax.set_xlim(0, 1024)
+
+hist, = ax.plot(data_arr, [], color='b')
+plt.ion()
+
 
 while n < n_acquisitions:
 
@@ -144,8 +159,13 @@ while n < n_acquisitions:
         #print(readings)
 
         sensor_data.append(readings)
+        hist_data = np.append(hist_data, readings)
         #print(sensor_data)
 
+        #digitize data
+        hist_data = np.digitize(hist_data, np.arange(0, 1024, 1024/n_bins))
+        bin_count= np.bincount(hist_data)
+        print(bin_count)
 
     print("Data collection complete")
 
@@ -162,7 +182,7 @@ while n < n_acquisitions:
     #append new acquisitions to data_arr
     data_arr = np.append(data_arr, sensor_data)
 
-
+plt.show()
 #flatten data_arr
 data_arr = data_arr.flatten()
 
@@ -180,3 +200,10 @@ data_arr = data_arr.flatten()
 #create histogram with data_arr
 plt.hist(data_arr, bins=5)
 plt.show()
+
+fig=plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+
+#create a real time histogram 
+
+

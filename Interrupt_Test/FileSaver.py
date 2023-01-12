@@ -19,7 +19,7 @@ baud = 9600 #arduino uno runs at 9600 baud
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 #change file directory to dir_path
-os.chdir(dir_path)
+os.chdir(dir_path+"/DataAcquisition")
 print("Changed directory to " + dir_path)
 
 #filename definition
