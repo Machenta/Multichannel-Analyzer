@@ -10,8 +10,8 @@ import time
 from datetime import datetime as dt
 
 #basic setup 
-#arduino_port = "COM3" #serial port of Arduino
-arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
+arduino_port = "COM3" #serial port of Arduino
+#arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
 baud = 9600 #arduino uno runs at 9600 baud
 
 
