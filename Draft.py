@@ -6,13 +6,19 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import style
 import numpy as np
+from scipy import stats
 import time
 from datetime import datetime as dt
+from collections import Counter
 
 #basic setup 
-arduino_port = "COM3" #serial port of Arduino
-#arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
+#arduino_port = "COM3" #serial port of Arduino
+arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
 baud = 9600 #arduino uno runs at 9600 baud
+
+#default time and number of acquisitions
+n_acquisitions = 10
+acquisition_time = 10
 
 
 #get directory path
@@ -26,6 +32,16 @@ print("Changed directory to " + dir_path)
 fileName="analog-data.csv" #name of the CSV file generated
 #add current time to file name
 fileName = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + fileName
+
+class NewWindow(tk.Toplevel):
+     
+    def __init__(self, master = None):
+         
+        super().__init__(master = master)
+        self.title("New Window")
+        self.geometry("200x200")
+        label = tk.Label(self, text ="This is a new Window")
+        label.pack()
 
 
 def combine_funcs(*funcs):
@@ -55,6 +71,14 @@ def changeText_acquisition_time():
 
 def Close():
     window.destroy()
+
+def open_Window():
+    newWindow = tk.Toplevel(window)
+    newWindow.title("Data Acquisition Dashboard")
+    newWindow.geometry("800x600")
+    Label1 = tk.Label(newWindow, text="Data Acquisition Dashboard") 
+    Label1.pack()   
+
 
 
 #initialize root window
@@ -89,8 +113,12 @@ button2.pack()
 canvas1.create_window(400, 80, window=button2)
 
 
-exit_button = tk.Button(window, text="OK", command=Close)
+exit_button = tk.Button(window, text="Start Acqusition and Open Dashboard", command=Close)
 exit_button.pack(pady=20)
+#new_dashboard_button = tk.Button(window, text="Open Dashboard", command=open_Window)
+#new_dashboard_button.bind("<Button-1>", lambda e: NewWindow(window))
+#new_dashboard_button.pack(pady=20)
+
 
 window.mainloop()
 
@@ -105,6 +133,7 @@ base_filename    = "analog-data.csv" #name of the CSV file generated
 n_acquisitions   = int(n_acquisitions) #number of acquisitions
 acquisition_time = int(acquisition_time) #seconds
 n=0 #counter
+n_bins = 10 #number of bins for histogram
 
 print("Collecting data for " + str(acquisition_time) + " seconds")
 
@@ -114,10 +143,33 @@ print("Connected to Arduino port: " + arduino_port)
 
 #initialize array containing all acquired arrays as an numpy array
 data_arr = np.array([])
+#initialize array to store data of all acquisitions
+sensor_data_all = [] #store data
+
+x=np.linspace(0, 10, n_bins)
+y=np.linspace(0, 10, n_bins)
+
+#x,y=np.zeros(n_bins), np.zeros(10) 
+
+print("x: ", x)
+plt.ion() #
+
+#create plot window to update in real time
+fig = plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+#set axis limits
+ax1.set_ylim(0, 100)
+ax1.set_xlim(0, n_bins)
+
+line1, = ax1.plot(x, y, 'r-')
+
+#create a dictionay to store the data with n_bins keys
+data_dict = {i:0 for i in range(n_bins)}
+
 
 while n < n_acquisitions:
 
-
+    
 
     n = n+1
     timeout = time.time() + acquisition_time #set the timeout
@@ -134,17 +186,30 @@ while n < n_acquisitions:
     sensor_data = [] #store data
 
 
+
+
+
     while time.time() < timeout:
+        
         getData=ser.readline()
         dataString = getData.decode('utf-8')
         data=dataString[0:][:-2]
         print(data)
 
         readings = data.split(",")
-        #print(readings)
-
+        #print("readings: ", readings)
+        #convert readings to float and append to sensor_data array
+        number = [float(x) for x in readings][0]
         sensor_data.append(readings)
-        #print(sensor_data)
+        sensor_data_all.append(number)
+        #update dictionary by updating the value of the key corresponding to the detected event 
+        data_dict.update({int(number) : data_dict[int(number)] + 1})
+
+        #update plot 
+        line1.set_ydata(list(data_dict.values()))
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+        
 
 
     print("Data collection complete")
@@ -176,7 +241,3 @@ data_arr = data_arr.flatten()
 #    ax1.axvline(x=event.xdata, color="k")
 
 
-
-#create histogram with data_arr
-plt.hist(data_arr, bins=5)
-plt.show()
