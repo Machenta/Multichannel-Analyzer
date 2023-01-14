@@ -25,12 +25,13 @@ device = Arduino.Arduino(arduino_port, baud)
 
 
 #start new thread for data collection
-thread = threading.Thread(target=device.full_collection(all_arr), args=(all_arr))
+thread = threading.Thread(target=device.full_collection(all_arr), args=(all_arr,)).start()
 
 #function to plot all_arr
 def plot_data(all_arr):
     plt.plot(all_arr)
     plt.show()
+    time.sleep(0.0001)
 
 #new thread to plot data
-thread2 = threading.Thread(target=plot_data(all_arr), args=(all_arr))
+thread2 = threading.Thread(target=plot_data(all_arr), args=(all_arr,)).start()

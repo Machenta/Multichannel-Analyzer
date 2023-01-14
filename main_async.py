@@ -21,7 +21,7 @@ os.chdir(dir_path+"/DataAcquisition")
 print("Changed directory to " + dir_path)
 
 all_arr= []
-device = Arduino.Arduino(arduino_port, baud)
+device = Arduino.Arduino(arduino_port, baud,n_acquisitions=2)
 
 
 #async def full_collection_async(all_data):
@@ -48,7 +48,7 @@ device = Arduino.Arduino(arduino_port, baud)
 
 
 async def print_array(all_data):
-    print(all_data)
+    print("all_data: " + str(all_data))
 
 
 async def main(obj=device,data_array=all_arr):
@@ -63,7 +63,8 @@ async def collect_data(dev, all_arr):
     sensor_data_all = []
     data_dict = {i:0 for i in range(dev.channels)}
     n=0
-    while n<dev.n_acquisitions:
+    n_iter= [i for i in range(dev.n_acquisitions)]
+    for n in n_iter:
         n=n+1
         timeout = time.time() + dev.acquisition_time #set the timeout
         sensor_data = []
@@ -93,7 +94,7 @@ async def collect_data(dev, all_arr):
         f.close()
         await asyncio.sleep(0.001)
 
-    await asyncio.sleep(0.001)    
+    await asyncio.sleep(0.01)    
 
 
  

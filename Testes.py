@@ -1,11 +1,14 @@
-arr1=[]
+import time
+import threading
 
-def foo(arr,i): 
-    arr.append(i) 
+x = [0]
+
+def update_var(var):
+    while True:
+        var[0] += 1
+        time.sleep(2.0)
+
+threading.Thread(target=update_var, args=(x,)).start()
 
 
-
-for i in range(10):
-    print(arr1)
-    foo(arr1,i)
-    print(arr1)
+print (x[0])

@@ -154,6 +154,8 @@ class Arduino:
 
         while self.n < self.n_acquisitions:
             self.get_data_acquisition_loop(all_data)
+
+        time.sleep(1)
   
 
 
