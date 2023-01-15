@@ -113,7 +113,7 @@ class Arduino:
         var = self.read_serial()
         sensor_data.append(var)
         dictionary.update({int(var) : dictionary[int(var)] + 1})
-        all_data.append(var)
+        all_data.put(var)
         print("var: " + str(var))
         return var 
 
@@ -149,13 +149,14 @@ class Arduino:
         print("Data collection complete")
         print("\n")
         f.close()
+        print("all_data: " + str(all_data))
 
     def full_collection(self, all_data):
 
         while self.n < self.n_acquisitions:
             self.get_data_acquisition_loop(all_data)
-
-        time.sleep(1)
+        
+        print("all_data: " + str(all_data))
   
 
 
