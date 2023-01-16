@@ -65,12 +65,23 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock):
 
     settings_dict.update({"stop_flag":True})
     
-def print_dict(shared_dict, settings_dict, lock):
+def print_q(q, settings_dict, lock, q_val_arr):
     while not settings_dict["stop_flag"]:
-        print("Shared dict in print_dict process:")
-        shared_dict.update()
-        print(shared_dict)
-        time.sleep(0.5)
+        while not q.empty():
+            last_element = q.get()
+            q_val_arr.append(last_element)
+            print("Last element: " + str(last_element))
+
+
+    print("Finished printing queue")
+
+def save_val(q_val_arr, q,settings_dict, lock):
+    while not settings_dict["stop_flag"]:
+        while not q.empty():
+                q_val_arr.append(q.get())
+
+    print("All values in queue: " + str(q_val_arr))
+
 
 def sync_dict(d, lock, settings_dict):
      while not settings_dict["stop_flag"]:
@@ -88,10 +99,12 @@ def launch_setup_window():
 def create_device_read_process(all_arr, 
                                 arduino_port,
                                 baud, 
-                                shared_dict,
+                                q,
                                 settings_dict,
                                 lock):
 
+    #create new empt dictionary to store data
+    shared_dict = multiprocessing.Manager().dict()
     device = Arduino.Arduino(arduino_port, 
                                 baud, 
                                 n_acquisitions  = settings_dict["n_acquisitions"],
@@ -114,18 +127,12 @@ def create_device_read_process(all_arr,
         while time.time() < timeout:
             with lock:
                 val = device.get_data_time_loop(sensor_data, shared_dict, all_arr)
-                #shared_dict.update({int(val) : shared_dict[int(val)] + 1})
-                #shared_dict.update()
-                shared_dict[int(val)] += 1
-                shared_dict.update()
-            print("Shared dict in function: " + str(shared_dict))
+                #append value to queue
+                q.put(val)
             time.sleep(0.001)
 
-
-        print("Shared dict just outside of function: " + str(shared_dict))
-
         #print("sensor_data: " + str(sensor_data))
-        print("Completed data collection: " + str(device.n + 1) + " of " + str(device.n_acquisitions))
+        print("Completed data collection: " + str(device.n + 1) + " of " + str(int(device.n_acquisitions)))
         #write data to file
         writer = csv.writer(f)
         writer.writerow(sensor_data)
@@ -135,11 +142,12 @@ def create_device_read_process(all_arr,
         f.close()
 
         n+=1
-        print("dict at the end: " + str(shared_dict))
+        
 
         settings_dict.update({"stop_flag":True})
+        print("Reading process complete")
     
-    print("Shared dict in create_device_read_process outside all funcs: " + str(shared_dict))
+    
     return stop_flag
 
         
@@ -188,20 +196,22 @@ if __name__ == "__main__":
 
 
     #create a queue to store data from arduino
-    q= multiprocessing.Queue()
-    
+    manager2 = multiprocessing.Manager()
+    q= manager2.Queue()
+    q_vals = []
 
-
-    all_arr= []
 
     #create new process to read data from arduino 
-    read_data = multiprocessing.Process(target=create_device_read_process, args=(all_arr,arduino_port, baud, current_acquisition_dict, settings_dict,lock))
+    read_data = multiprocessing.Process(target=create_device_read_process, args=(q_vals,arduino_port, baud, q, settings_dict,lock))
 
     #process to print the shared dictionary
-    print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict, settings_dict, lock))
+    print_dict_proc = multiprocessing.Process(target=print_q, args=(q, settings_dict, lock, q_vals))
+
+    #create new process to save data from queue to array
+    #save_data_proc = multiprocessing.Process(target=save_val, args=(q_vals, q, settings_dict, lock))
 
     #process to sync the shared dictionary
-    sync_dict_proc = multiprocessing.Process(target=sync_dict, args=(current_acquisition_dict, lock, settings_dict))
+    sync_dict_proc = multiprocessing.Process(target=sync_dict, args=(q, lock, settings_dict))
 
     #process for UI, data analysis and plotting
     #UI_process = multiprocessing.Process(target=launch_setup_window, args=(all_arr, current_acquisition_dict, settings_dict))
@@ -211,8 +221,11 @@ if __name__ == "__main__":
 
     read_data.start()
     print_dict_proc.start()
+    #save_data_proc.start()
     
     read_data.join()
     print_dict_proc.join()
+    #save_data_proc.join()
     
-    print("Shared dict just outside of main: " + str(current_acquisition_dict))
+    print("Saved values: " )
+    print(q_vals)
