@@ -1,37 +1,24 @@
-import asyncio
-import serial
 import numpy as np
-import time
 from datetime import datetime as dt
-import os
-import csv
 import matplotlib.pyplot as plt
-import Arduino
-import threading
+import tkinter as tk
+import AcquisitionSetupWindow as acq
 
 
-#basic setup 
-arduino_port = "COM3" #serial port of Arduino
-#arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
-baud = 9600 #arduino uno runs at 9600 baud
-
-#setup directory for file storage
-dir_path = os.path.dirname(os.path.realpath(__file__))
-os.chdir(dir_path+"/DataAcquisition")
-print("Changed directory to " + dir_path)
-
-all_arr= []
-device = Arduino.Arduino(arduino_port, baud)
 
 
-#start new thread for data collection
-thread = threading.Thread(target=device.full_collection(all_arr), args=(all_arr,)).start()
+if __name__ == "__main__":
+    #root = tk.Tk()
+    #setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x100")
+#
+    #a,b = setup_window.return_params()
+##
+    #print("Number of acquisitions:", str(a))
+    #print("Acquisition time:", str(b))
 
-#function to plot all_arr
-def plot_data(all_arr):
-    plt.plot(all_arr)
-    plt.show()
-    time.sleep(0.0001)
+    mydict = {1:2, 2:3, "stop":4}
+    mydict.update({"stop":"ad"})
+    print(mydict)
 
-#new thread to plot data
-thread2 = threading.Thread(target=plot_data(all_arr), args=(all_arr,)).start()
+    print(mydict["stop"].value)
+    

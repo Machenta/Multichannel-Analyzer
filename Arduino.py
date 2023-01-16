@@ -24,6 +24,7 @@ class Arduino:
         self.sensor_data_all = sensor_data_all
         self.channels=n_channels
         self.current_dict=current_dict
+        self.stop_flag = False
 
 
     def return_data(array,instance):
@@ -113,13 +114,14 @@ class Arduino:
     def get_data_time_loop(self,sensor_data, current_dict, all_data):
         var = self.read_serial()
         sensor_data.append(var)
-        #update dictionary with new data
-        current_dict.update({int(var) : current_dict[int(var)] + 1})
-        #dictionary.update({int(var) : dictionary[int(var)] + 1})
+
+        #update dictionary with new data for the respective channel
+        #current_dict.update({int(var) : current_dict[int(var)] + 1})
         all_data.append(var)
+
         print("var: " + str(var))
         #print dictionary
-        print("current_dict: " + str(current_dict))
+        #print("current_dict: " + str(current_dict))
         return var 
 
     def get_data_acquisition_loop(self, all_data):
@@ -162,6 +164,8 @@ class Arduino:
             self.get_data_acquisition_loop(all_data)
         
         print("all_data: " + str(all_data))
+        self.stop_flag = True
+        return self.stop_flag
   
 
 
