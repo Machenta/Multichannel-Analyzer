@@ -36,8 +36,8 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock):
         print("Created file: " + fileName)
 
         while time.time() < timeout:
-            
-            val = dev.get_data_time_loop(sensor_data, shared_dict, all_arr)
+            with lock:
+                val = dev.get_data_time_loop(sensor_data, shared_dict, all_arr)
             shared_dict.update({int(val) : shared_dict[int(val)] + 1})
             shared_dict.update()
             print("Shared dict in function: " + str(shared_dict))
@@ -65,11 +65,11 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock):
     settings_dict.update({"stop_flag":True})
         
 def print_dict(shared_dict, settings_dict, lock):
-        while not settings_dict["stop_flag"]:
-            print("Shared dict in print_dict process:")
-            shared_dict.update()
-            print(shared_dict)
-            time.sleep(0.5)
+    while not settings_dict["stop_flag"]:
+        print("Shared dict in print_dict process:")
+        shared_dict.update()
+        print(shared_dict)
+        time.sleep(0.5)
 
 def sync_dict(d, lock, settings_dict):
      while not settings_dict["stop_flag"]:
