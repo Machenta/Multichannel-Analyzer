@@ -15,7 +15,7 @@ import threading
 #read_data = multiprocessing.Process(target=device.full_collection, args=(all_arr))
 
 
-def collect_data(dev, all_arr):
+def collect_data(dev, all_arr, shared_dict):
     sensor_data_all = []
     data_dict = {i:0 for i in range(dev.channels)}
     n=0
@@ -50,20 +50,13 @@ def collect_data(dev, all_arr):
         print("\n")
         f.close()
         
-def calc_square(numbers):
-    for n in numbers:
-        print('square ' + str(n*n))
-
-def calc_cube(numbers):
-    for n in numbers:
-        print('cube ' + str(n*n*n))
 
 
 #create new process to read data from arduino after creating a new device object 
 #this is necessary because the device object is not picklable
-def create_device_read_process(all_arr, arduino_port, baud):
-    device = Arduino.Arduino(arduino_port, baud,n_acquisitions=2,sensor_data_all=all_arr)   
-    collect_data(device, all_arr) 
+def create_device_read_process(all_arr, arduino_port, baud,shared_dict):
+    device = Arduino.Arduino(arduino_port, baud,n_acquisitions=2,sensor_data_all=all_arr,current_dict= shared_dict)  
+    collect_data(device, all_arr,shared_dict) 
 
 
 
@@ -71,9 +64,10 @@ if __name__ == "__main__":
 
 
     #basic setup 
-    arduino_port = "COM3" #serial port of Arduino
-    #arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
+    #arduino_port = "COM3" #serial port of Arduino
+    arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
     baud = 9600 #arduino uno runs at 9600 baud
+    n_channels = 10 #number of channels on the arduino
 
     #setup directory for file storage
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -82,8 +76,9 @@ if __name__ == "__main__":
 
     #manager for shared memory dictionary
     manager = multiprocessing.Manager()
-    shared_dict = manager.dict()
-
+    current_acquisition_dict = manager.dict()
+    #set entire dictionary to 0
+    current_acquisition_dict = {i:0 for i in range(n_channels)}
 
     all_arr= []
 
