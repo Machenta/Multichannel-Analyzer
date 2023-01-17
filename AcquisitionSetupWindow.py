@@ -53,7 +53,7 @@ class AcquisitionSetupWindow(tk.Frame):
     def get_acquisitions_params(self): 
         #get value from entry box and save it in n_acquisitions variable
         #print("type of n_acquisitions_entry:", type(self.n_acquisitions_entry))
-        self.n_acquisitions = float(self.n_acquisitions_entry.get())
+        self.n_acquisitions = int(self.n_acquisitions_entry.get())
         self.time_acquisition = float(self.time_acquisition_entry.get())
         #print("Number of acquisitions:", self.n_acquisitions)
         #print("Acquisition time:", self.time_acquisition)

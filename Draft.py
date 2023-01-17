@@ -204,7 +204,7 @@ while n < n_acquisitions:
         sensor_data_all.append(number)
         #update dictionary by updating the value of the key corresponding to the detected event 
         data_dict.update({int(number) : data_dict[int(number)] + 1})
-
+        
         #update plot 
         line1.set_ydata(list(data_dict.values()))
         fig.canvas.draw()
