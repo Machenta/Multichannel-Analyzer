@@ -51,6 +51,7 @@ class UI_Window(tk.Frame):
         
         self.label_names= ["Total Counts", "Start Time" , "Preset Time","ADC Channels","Number of Samples", "Time Elapsed" , "Count Rate (Hz)"]
         self.name_table = [0 for label in self.label_names]
+
         for i in range(len(self.label_names)):
             self.name_table[i] = tk.Label(self.frame_metrics, text=self.label_names[i], anchor="center", width=self.label_width, height=self.label_height).grid(row=i, column=0, sticky="nsew")
 

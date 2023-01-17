@@ -181,7 +181,7 @@ def UI_run(settings, shared_dict):
         metrics= [total_counts, start_time, preset_time, n_channels, n_acquisitions, t_elapsed, count_rate]
 
         line1.set_ydata(list(shared_dict.values()))
-        ax1.set_ylim(0, 1.1*max(shared_dict.values()))
+        ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
         cid = fig.canvas.mpl_connect('button_press_event', pi.onclick)
         fig.canvas.draw()
         fig.canvas.flush_events()
@@ -189,7 +189,7 @@ def UI_run(settings, shared_dict):
         
 
         time.sleep(0.001)
-        UI_obj.run_real_time(shared_dict, metrics)
+        UI_obj.run_real_time(data= shared_dict, metrics = metrics)
 
 
 if __name__ == "__main__":
