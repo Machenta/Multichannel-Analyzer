@@ -5,15 +5,20 @@ import numpy as np
 from datetime import datetime as dt
 import os
 import csv
+import matplotlib
 import matplotlib.pyplot as plt
 import tkinter as tk
 from dataclasses import dataclass, field
+
+#only on mac
+matplotlib.use("TkAgg")
 
 #My imports
 import UI_class
 import PlotInteraction as pi
 import Arduino
 import AcquisitionSetupWindow as acq
+
 
 @dataclass
 class Settings:
@@ -27,8 +32,8 @@ class Settings:
     default_save_folder: str = "DataAcquisition"
     acquisition_filesave_path: str = os.path.join(dir_path, default_save_folder)
     settings_dict: dict = field(default_factory=dict)
+    stop_flag
 
-   
 
 #create list with all parameters inside of the get_metrics function
 params_list= ["Total Counts", "Start Time", "Preset Time", "ADC Channels", "Number of Acquisitions", "Save Directory","Data Collection Rate (Hz)"]
@@ -66,7 +71,7 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock, settings):
 
         #reset dictionary
         #shared_dict = {key: 0 for key in shared_dict}
-        print("Shared dict just before function: " + str(shared_dict))
+        #3print("Shared dict just before function: " + str(shared_dict))
         for key in range(settings.n_channels):
             shared_dict[key] = 0
         #get the current time and set the timeout
@@ -87,7 +92,7 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock, settings):
                 #shared_dict.update()
                 shared_dict[int(val)] += 1
                 shared_dict.update()
-            print("Shared dict in function: " + str(shared_dict))
+            #print("Shared dict in function: " + str(shared_dict))
             time.sleep(0.001)
         
         #print("sensor_data: " + str(sensor_data))
@@ -107,16 +112,10 @@ def collect_data(dev, all_arr, shared_dict, settings_dict, lock, settings):
 
 def print_dict(shared_dict, settings_dict, lock):
     while not settings_dict["stop_flag"]:
-        print("Shared dict in print_dict process:")
+        #print("Shared dict in print_dict process:")
         shared_dict.update()
-        print(shared_dict)
+        #print(shared_dict)
         time.sleep(0.5)
-
-def sync_dict(d, lock, settings_dict):
-     while not settings_dict["stop_flag"]:
-        lock.acquire()
-        d.update()
-        lock.release()
 
 def launch_setup_window():
     root = tk.Tk()
@@ -126,15 +125,11 @@ def launch_setup_window():
 #create new process to read data from arduino after creating a new device object 
 #this is necessary because the device object is not picklable
 def create_device_read_process(all_arr, 
-                                arduino_port,
-                                baud, 
                                 shared_dict,
                                 settings_dict,
                                 lock, settings):
 
-    device = Arduino.Arduino(arduino_port, 
-                                baud, 
-                                n_acquisitions  = settings.n_acquisitions,
+    device = Arduino.Arduino( n_acquisitions  = settings.n_acquisitions,
                                 sensor_data_all = all_arr,
                                 current_dict    = shared_dict,)  
 
@@ -145,7 +140,6 @@ def create_device_read_process(all_arr,
                     lock,
                     settings) 
     
-
 def UI_run(settings, shared_dict):
 
     #first we create the figure to pass to the UI class
@@ -163,9 +157,10 @@ def UI_run(settings, shared_dict):
 
     #create the UI object
     root= tk.Tk()
-    UI_obj= UI_class.UI_Window(root, title = "Data Acquisition", geometry = "900x900", matplot_fig = fig)
+    UI_obj= UI_class.UI_Window(root, title = "Data Acquisition", geometry = "1000x700", matplot_fig = fig)
 
     t_start = time.time()
+    cid = None
     #main UI window loop
     while not settings.stop_flag:
 
@@ -175,16 +170,20 @@ def UI_run(settings, shared_dict):
         preset_time = settings.t_acquisition
         n_channels = settings.n_channels
         n_acquisitions = settings.n_acquisitions
-        t_elapsed = round(time.time() - t_start,1)
+        #t_elapsed is the minimum of the elapsed time and the preset time
+        t_elapsed = min(round(time.time() - t_start,1), preset_time)
         count_rate = round(float(total_counts)/(t_elapsed+0.0001),2)
 
         metrics= [total_counts, start_time, preset_time, n_channels, n_acquisitions, t_elapsed, count_rate]
 
         line1.set_ydata(list(shared_dict.values()))
         ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
+        if cid is not None:
+            fig.canvas.mpl_disconnect(cid)
         cid = fig.canvas.mpl_connect('button_press_event', pi.onclick)
         fig.canvas.draw()
         fig.canvas.flush_events()
+    
 
         
 
@@ -194,21 +193,31 @@ def UI_run(settings, shared_dict):
 
 if __name__ == "__main__":
 
-
+    #start with default settings for arduino and acquisition
     settings= Settings()
 
     #basic setup 
-    arduino_port = "COM3" #serial port of Arduino
+    #arduino_port = "COM3" #serial port of Arduino
     #arduino_port = "/dev/cu.usbmodem11101" #serial port of Arduino
-    baud = 9600 #arduino uno runs at 9600 baud
+    #baud = 9600 #arduino uno runs at 9600 baud
     n_channels = 10 #number of channels on the arduino
-
-
 
     #setup directory for file storage
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    os.chdir(os.path.join((dir_path),"DataAcquisition"))
-    print("Changed savefile directory to " + dir_path)
+
+    #change directory to the new folder to save data
+    #if directory not found, create it
+    directory_save_folder = os.path.join((dir_path),"DataAcquisition")
+
+    if not os.path.exists(directory_save_folder):
+        os.makedirs(directory_save_folder)
+        print("Created savefile directory at " + directory_save_folder)
+        #change directory to the new folder
+        os.chdir(directory_save_folder)
+    else:
+        #change directory to the new folder
+        os.chdir(directory_save_folder)
+
 
     root = tk.Tk()
     setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x100")
@@ -235,12 +244,12 @@ if __name__ == "__main__":
     #dictionary with all settings for the current acquisition 
     settings_dict = manager.dict()
     settings_dict["n_channels"] = n_channels
-    settings_dict["arduino_port"] = arduino_port
-    settings_dict["baud"] = baud
+    settings_dict["arduino_port"] = "COM3"
+    settings_dict["baud"] = 9600
     settings_dict["n_acquisitions"] = settings.n_acquisitions
     settings_dict["t_acquisition"] = settings.t_acquisition
     settings_dict["dir_path"] = dir_path
-    settings_dict["acquisition_filesave"] = os.chdir(dir_path+"/DataAcquisition")
+    settings_dict["acquisition_filesave"] = directory_save_folder
     settings_dict["stop_flag"] = 0
 
    
@@ -248,7 +257,7 @@ if __name__ == "__main__":
     all_arr= []
 
     #create new process to read data from arduino 
-    read_data = multiprocessing.Process(target=create_device_read_process, args=(all_arr,arduino_port, baud, current_acquisition_dict, settings_dict,lock, settings))
+    read_data = multiprocessing.Process(target=create_device_read_process, args=(all_arr, current_acquisition_dict, settings_dict,lock, settings))
 
     #process to print the shared dictionary
     print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict, settings_dict, lock))

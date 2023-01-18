@@ -23,6 +23,15 @@ class UI_Window(tk.Frame):
         self.matplot_fig = matplot_fig
         self.label_width = 20
         self.label_height = 5
+        self.standard_font = ("Helvetica", 12)
+        self.standard_button_size = (5,5)
+        self.standard_button_font = ("Helvetica", 12)
+        self.standard_label_size = (15,2)
+        self.standard_label_font = ("Helvetica", 12)
+        self.standard_entry_size = (30,30)
+        self.standard_entry_font = ("Helvetica", 12)
+
+
 
 
         #create default figure for the multichannel plot
@@ -57,7 +66,7 @@ class UI_Window(tk.Frame):
 
         self.value_table = [0 for label in self.label_names]
         for i in range(len(self.label_names)):
-            self.value_table[i] = tk.Label(self.frame_metrics, text=str(0), anchor="center", width=self.label_width, height=self.label_height)  
+            self.value_table[i] = tk.Label(self.frame_metrics, text=str(0), anchor="center", width=self.standard_label_size[0], height=self.standard_label_size[1])  
             self.value_table[i].grid(row=i, column=1, sticky="nsew")  
 
 
@@ -66,6 +75,21 @@ class UI_Window(tk.Frame):
         self.frame_interactive_metrics = tk.Frame(self.root, width=200, height=700, relief = 'raised', bg='red', bd=1)
         self.frame_interactive_metrics.grid(sticky="nsew",column=0,row=1)
 
+        #create frame for the buttons 
+        self.config_frame = tk.Frame(self.root, width=200, height=200, relief = 'raised', bg='green', bd=1)
+        self.config_frame.grid(sticky="nsew",column=1,row=1)
+
+        #create entry box for the threshold value and add it to the config frame 
+        self.threshold_value= tk.StringVar()
+        self.threshold_label = tk.Label(self.config_frame, text="Threshold \n Value", anchor="center", width=15, height=self.standard_button_size[1])
+        self.threshold_label.grid(row=0, column=0, sticky="nsew")
+        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold_value)
+        self.threshold_entry.grid(row=0, column=1, sticky="nsew")
+    
+
+        #create button to submit the threshold value and add it to the config frame
+        self.threshold_button = tk.Button(self.config_frame, text="Submit Threshold", command=self.combine_funcs(self.get_threshold,self.change_text_submitted), width=self.standard_button_size[0], height=self.standard_button_size[1])
+        self.threshold_button.grid(row=1, column=1, sticky="nsew")
 
     def run(self):
         self.root.update()
@@ -80,6 +104,25 @@ class UI_Window(tk.Frame):
 
 
         self.root.update()
+
+
+    def get_threshold(self):
+        try:
+            return float(self.threshold_entry.get())
+        except:
+            print("Please enter a valid number")
+            return float(0)
+
+    def change_text_submitted(self):
+        self.threshold_button(text="Threshold Submitted")
+
+    #define a function to combine multiple functions
+    def combine_funcs(*funcs):
+        def combined_func(*args, **kwargs):
+            for f in funcs:
+                f(*args, **kwargs)
+        return combined_func
+
 
 #if __name__ == "__main__":
 #

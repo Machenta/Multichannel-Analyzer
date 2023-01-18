@@ -6,14 +6,24 @@ from datetime import datetime as dt
 import os
 import csv
 import matplotlib.pyplot as plt
+import serial.tools.list_ports
+import random
 
 
 #create serial object - Arduino
 class Arduino:
-    def __init__(self, port, baud, n_acquisitions=1, acquisition_time=5, filename="analog-data.csv", sensor_data_all=[], n_channels=10, current_dict={}):
+    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, filename="analog-data.csv", sensor_data_all=[], n_channels=10, current_dict={}):
         self.port = port
         self.baud = baud
-        self.ser = serial.Serial(self.port, self.baud)
+        
+        self.ports = list(serial.tools.list_ports.comports())
+        for port in self.ports:
+            if "VID:PID" in port[2]:
+                self.port = port[0]
+                
+                print("Detected arduino at port: " + self.port)
+                break
+
         print("Connected to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
         self.data = []  # store data
         self.n = 0
@@ -25,6 +35,18 @@ class Arduino:
         self.channels=n_channels
         self.current_dict=current_dict
         self.stop_flag = False
+
+        
+
+        self.ser = serial.Serial(self.port, self.baud)
+
+    def port_autodetect(self):
+        ports = list(serial.tools.list_ports.comports())
+        for port in ports:
+            if "VID:PID" in port[2]:
+                self.arduino_port = port[0]
+            break
+        return self.arduino_port
 
 
     def return_data(array,instance):
@@ -109,7 +131,10 @@ class Arduino:
         print("Closed connection to Arduino port: " + self.port + "at " + str(self.baud) + " baud.")    
 
     def read_serial(self):
-        return float(self.ser.readline().decode("utf-8").strip())
+        #return float(self.ser.readline().decode("utf-8").strip())
+        val= random.randint(0, 9)
+        time.sleep(0.3)
+        return val
 
     def get_data_time_loop(self,sensor_data, current_dict, all_data):
         var = self.read_serial()
