@@ -28,8 +28,9 @@ class UI_Window(tk.Frame):
         self.standard_button_font = ("Helvetica", 12)
         self.standard_label_size = (15,2)
         self.standard_label_font = ("Helvetica", 12)
-        self.standard_entry_size = (30,30)
+        self.standard_entry_size = (10,30)
         self.standard_entry_font = ("Helvetica", 12)
+        self.threshold = 0 
 
 
 
@@ -66,7 +67,7 @@ class UI_Window(tk.Frame):
 
         self.value_table = [0 for label in self.label_names]
         for i in range(len(self.label_names)):
-            self.value_table[i] = tk.Label(self.frame_metrics, text=str(0), anchor="center", width=self.standard_label_size[0], height=self.standard_label_size[1])  
+            self.value_table[i] = tk.Label(self.frame_metrics, text=str(0), anchor="center", width=self.standard_label_size[0]+2, height=self.standard_label_size[1])  
             self.value_table[i].grid(row=i, column=1, sticky="nsew")  
 
 
@@ -75,40 +76,62 @@ class UI_Window(tk.Frame):
         self.frame_interactive_metrics = tk.Frame(self.root, width=200, height=700, relief = 'raised', bg='red', bd=1)
         self.frame_interactive_metrics.grid(sticky="nsew",column=0,row=1)
 
+        #adding labels to the interactive metrics frame
+        self.interactive_metrics = ["Threshold Value", "Channel", "Selected Channel Count"] 
+        self.interactive_metrics_table = [0 for label in self.interactive_metrics]
+
+        for i in range(len(self.interactive_metrics)):
+            self.interactive_metrics_table[i] = tk.Label(self.frame_interactive_metrics, text=self.interactive_metrics[i], anchor="center", width=self.label_width, height=self.label_height).grid(row=0, column=i, sticky="nsew")
+
+        #attribute values for the interactive metrics
+        self.interactive_metrics_values = [0 for label in self.interactive_metrics]
+        for i in range(len(self.interactive_metrics)):
+            self.interactive_metrics_values[i] = tk.Label(self.frame_interactive_metrics, text=str(0), anchor="center", width=self.standard_label_size[0]+2, height=self.standard_label_size[1])  
+            self.interactive_metrics_values[i].grid(row=1, column=i, sticky="nsew")      
+
+
+
         #create frame for the buttons 
         self.config_frame = tk.Frame(self.root, width=200, height=200, relief = 'raised', bg='green', bd=1)
         self.config_frame.grid(sticky="nsew",column=1,row=1)
 
         #create entry box for the threshold value and add it to the config frame 
         self.threshold_value= tk.StringVar()
-        self.threshold_label = tk.Label(self.config_frame, text="Threshold \n Value", anchor="center", width=15, height=self.standard_button_size[1])
+        self.threshold_label = tk.Label(self.config_frame, text="Threshold \n Value", anchor="center", width=10, height=2)
         self.threshold_label.grid(row=0, column=0, sticky="nsew")
-        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold_value)
+
+        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold)
+        self.threshold_entry.config(width=self.standard_entry_size[0], font=self.standard_entry_font)
         self.threshold_entry.grid(row=0, column=1, sticky="nsew")
     
 
         #create button to submit the threshold value and add it to the config frame
-        self.threshold_button = tk.Button(self.config_frame, text="Submit Threshold", command=self.combine_funcs(self.get_threshold,self.change_text_submitted), width=self.standard_button_size[0], height=self.standard_button_size[1])
-        self.threshold_button.grid(row=1, column=1, sticky="nsew")
+        self.threshold_button = tk.Button(self.config_frame, text="OK", command=self.get_threshold, width=self.standard_button_size[0], height=2)
+        self.threshold_button.grid(row=0, column=2, sticky="nsew")
 
     def run(self):
         self.root.update()
 
     #A figure MUST be passed to this function as well a continuously updated data stream (data)
 
-    def run_real_time(self, data, metrics):
+    def run_real_time(self, data, metrics, interactive_metrics):
         #we must update the labels with the new updated metrics from the data stream
         for i in range(len(self.label_names)):
             self.value_table[i].config(text=str(metrics[i]))
             self.value_table[i].update()
+            if i < len(self.interactive_metrics):
+                self.interactive_metrics_values[i].config(text=str(int(interactive_metrics[i])))
+                self.interactive_metrics_values[i].update()
+            
 
 
         self.root.update()
-
+        return self.threshold
 
     def get_threshold(self):
         try:
-            return float(self.threshold_entry.get())
+            self.threshold = float(self.threshold_entry.get())
+            return float(self.threshold)
         except:
             print("Please enter a valid number")
             return float(0)

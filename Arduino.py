@@ -12,7 +12,7 @@ import random
 
 #create serial object - Arduino
 class Arduino:
-    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, filename="analog-data.csv", sensor_data_all=[], n_channels=10, current_dict={}):
+    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, filename="analog-data.csv", sensor_data_all=[], n_channels=1024, current_dict={}):
         self.port = port
         self.baud = baud
         
@@ -35,24 +35,11 @@ class Arduino:
         self.channels=n_channels
         self.current_dict=current_dict
         self.stop_flag = False
-
-        
-
         self.ser = serial.Serial(self.port, self.baud)
-
-    def port_autodetect(self):
-        ports = list(serial.tools.list_ports.comports())
-        for port in ports:
-            if "VID:PID" in port[2]:
-                self.arduino_port = port[0]
-            break
-        return self.arduino_port
-
 
     def return_data(array,instance):
         array.append(instance)
         return instance
-
 
     def collect_data_with_plot(self, data_arr):
 
@@ -131,9 +118,10 @@ class Arduino:
         print("Closed connection to Arduino port: " + self.port + "at " + str(self.baud) + " baud.")    
 
     def read_serial(self):
-        #return float(self.ser.readline().decode("utf-8").strip())
-        val= random.randint(0, 9)
-        time.sleep(0.3)
+        #val = float(self.ser.readline().decode("utf-8").strip())
+        #get a random number according to a guassian distribution mean 5 standard deviation 1
+        val = random.randint(0, self.channels-1)
+        time.sleep(0.001)
         return val
 
     def get_data_time_loop(self,sensor_data, current_dict, all_data):
@@ -144,7 +132,7 @@ class Arduino:
         #current_dict.update({int(var) : current_dict[int(var)] + 1})
         all_data.append(var)
 
-        print("var: " + str(var))
+        #print("var: " + str(var))
         #print dictionary
         #print("current_dict: " + str(current_dict))
         return var 
