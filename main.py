@@ -9,6 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import tkinter as tk
 from dataclasses import dataclass, field
+import random
 
 #Deals with an issue with matplotlib on mac
 matplotlib.use("TkAgg")
@@ -17,7 +18,7 @@ matplotlib.use("TkAgg")
 import UI_class
 #import PlotInteraction as pi
 import Arduino
-import AcquisitionSetupWindow as acq
+import AcquisitionSetupWindowv2 as acq
 
 
 @dataclass
@@ -32,15 +33,32 @@ class Settings:
     default_save_folder: str = "DataAcquisition"
     acquisition_filesave_path: str = os.path.join(dir_path, default_save_folder)
     settings_dict: dict = field(default_factory=dict)
-    stop_flag
+    stop_flag : bool = False
     threshold: int = 0
+    default_filename: str = "AnalogData"
+
+    def update_with_inputs (self, parms : acq.AcquisitionSettings):
+        self.n_acquisitions = parms.n_acquisitions
+        self.t_acquisition = parms.t_acquisition
+        self.dir_path = parms.savefile_directory
+        self.default_save_folder = parms.default_folder
+        self.default_filename = parms.default_filename
+
+    def create_header(self):
+        h = ["ADC Channels: " +  str(self.n_channels),
+        "Number of Acquisitions: " + str(self.n_acquisitions),
+        "Preset Time: " + str(self.t_acquisition),
+        "Save Directory: " + str(self.acquisition_filesave_path)]
+        return h
+
 
 
 #create list with all parameters inside of the get_metrics function
 params_list= ["Total Counts", "Start Time", "Preset Time", "ADC Channels", "Number of Acquisitions", "Save Directory","Data Collection Rate (Hz)"]
 
 
-def get_metrics(data_dict, settings_dict, t_elapsed, print_flag=False):
+
+def get_metrics(data_dict : dict, settings_dict, t_elapsed, print_flag=False):
 
     total_counts = sum(data_dict.values())
     start_time = dt.now().strftime("%Y/%m/%d - %H:%M:%S")
@@ -64,59 +82,50 @@ def get_metrics(data_dict, settings_dict, t_elapsed, print_flag=False):
     return total_counts, start_time, preset_time, n_channels, n_acquisitions, count_rate, save_directory
 
 
-def collect_data(dev, all_arr, shared_dict, settings_dict, lock, settings):
+def collect_data(dev : Arduino, shared_dict : dict, settings_dict : dict, lock , settings):
     
     n=0
-    
-    while n < settings.n_acquisitions:
+    if settings.stop_flag == False:
+        while n < settings.n_acquisitions:
 
-        #reset dictionary
-        #shared_dict = {key: 0 for key in shared_dict}
-        #3print("Shared dict just before function: " + str(shared_dict))
-        for key in range(settings.n_channels):
-            shared_dict[key] = 0
-        #get the current time and set the timeout
-        timeout = time.time() + dev.acquisition_time #set the timeout
-        sensor_data = []
+            #reset dictionary
+            for key in range(settings.n_channels):
+                shared_dict[key] = 0
+            #get the current time and set the timeout
+            timeout = time.time() + settings.t_acquisition #set the timeout
+            sensor_data = []
 
-        #update filename
-        fileName = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + "-"+ dev.filename
+            #update filename
+            fileName = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + "-"+ settings.default_filename + "_" + str(n).zfill(4) +".csv"
 
-        #open new file with new filename for new acquisition 
-        f = open(fileName, "a")
-        print("Created file: " + fileName)
+            #open new file with new filename for new acquisition 
+            f = open(fileName, "a")
+            print("Created file: " + fileName)
+            writer = csv.writer(f)
 
-        while time.time() < timeout:
-            with lock:
-                val = dev.get_data_time_loop(sensor_data, shared_dict, all_arr)
-                #shared_dict.update({int(val) : shared_dict[int(val)] + 1})
-                #shared_dict.update()
-                shared_dict[int(val)] += 1
-                shared_dict.update()
-            #print("Shared dict in function: " + str(shared_dict))
-            time.sleep(0.00001)
-        
-        #print("sensor_data: " + str(sensor_data))
-        print("Completed data collection: " + str(dev.n + 1) + " of " + str(dev.n_acquisitions))
-        #write data to file
-        writer = csv.writer(f)
-        writer.writerow(sensor_data)
+            writer.writerow(settings.create_header())
 
-        # close file
-        print("Data collection complete")
-        print("\n")
-        f.close()
-        n=n+1
+            while time.time() < timeout:
+                with lock:
+                    val = dev.get_data_time_loop(sensor_data, shared_dict)
+                    shared_dict[int(val)] += 1
+                    shared_dict.update()
+                time.sleep(0.00001)
+
+            print("Completed data collection: " + str(dev.n + 1) + " of " + str(dev.n_acquisitions))
+            #write data to file
+            
+            writer.writerow(sensor_data)
+
+            # close file
+            print("Data collection complete")
+            print("\n")
+            f.close()
+            n=n+1
         
 
-    settings_dict.update({"stop_flag":True})
+    settings.stop_flag = True
 
-def print_dict(shared_dict, settings_dict, lock):
-    while not settings_dict["stop_flag"]:
-        #print("Shared dict in print_dict process:")
-        shared_dict.update()
-        #print(shared_dict)
-        time.sleep(0.5)
 
 def launch_setup_window():
     root = tk.Tk()
@@ -125,19 +134,16 @@ def launch_setup_window():
 
 #create new process to read data from arduino after creating a new device object 
 #this is necessary because the device object is not picklable
-def create_device_read_process(all_arr, 
-                                shared_dict,
-                                settings_dict,
-                                lock, settings):
+def create_device_read_process( shared_dict : dict,
+                                settings_dict : dict,
+                                lock, settings : Settings):
 
     device = Arduino.Arduino( n_acquisitions  = settings.n_acquisitions,
-                                sensor_data_all = all_arr,
-                                current_dict    = shared_dict,
+                                current_dict  = shared_dict,
                                 n_channels=settings.n_channels,
                                 acquisition_time=settings.t_acquisition)  
 
     collect_data(device, 
-                    all_arr,
                     shared_dict, 
                     settings_dict, 
                     lock,
@@ -154,7 +160,7 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
         fig = plt.gcf()
         if hasattr(fig, 'line'):
             fig.line.remove()
-        fig.line = plt.axvline(event.xdata, color='r')
+        fig.line = plt.axvline(event.xdata, color='black')
         x_val1 = event.xdata
         y_val1 = event.ydata
         fig.canvas.draw()
@@ -162,19 +168,23 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
 
 def UI_run(settings : Settings, shared_dict : dict):
 
+    
     #first we create the figure to pass to the UI class
-    x=np.linspace(0, settings.n_channels, settings.n_channels)
-    y=np.linspace(0, settings.n_channels, settings.n_channels)
+    x=np.linspace(1, settings.n_channels, settings.n_channels)
+    #print("x: " + str(x))
+    y=np.linspace(1, settings.n_channels, settings.n_channels)
     fig, ax1  = plt.subplots()
     ax1.set_ylim(0, 100)
     ax1.set_xlim(0, settings.n_channels)
     ax1.set_title("Data Acquisition")
     ax1.set_xlabel("Channel")
     ax1.set_ylabel("Counts")
-
+    ax1.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
+    
     #draw a tentative plot 
+    
     line1, = ax1.plot(x, y, 'r-')
-
+    line2 = ax1.scatter(x, y, c='b', marker='o', s=10, alpha=0.5)
     #create the UI object
     root= tk.Tk()
     UI_obj= UI_class.UI_Window(root, title = "Data Acquisition", geometry = "1000x700", matplot_fig = fig)
@@ -183,6 +193,7 @@ def UI_run(settings : Settings, shared_dict : dict):
     now=dt.now().strftime("%Y/%m/%d - %H:%M:%S")
     cid = None
     xvalue= None
+    lines = []
     #main UI window loop
     while not settings.stop_flag:
 
@@ -202,11 +213,23 @@ def UI_run(settings : Settings, shared_dict : dict):
         y_temp= [shared_dict[i] if i >= settings.threshold else 0 for i in range(settings.n_channels)]
 
         #line1.set_ydata(list(shared_dict.values()))
+        #print("y_temp: " + str(y_temp))
+
         line1.set_ydata(y_temp)
+        line1.set_xdata(x)
+        line2.set_offsets(np.c_[x,y_temp])
+
         ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
+        # clear the fill
+        #fill.remove()
         #ax1.fill_between(x, y_temp, color='red', alpha=0.5)
+
         if settings.threshold != 0: 
-            ax1.axvline(x=settings.threshold, color='blue', linestyle='--', linewidth=0.5)
+            line = ax1.axvline(x=settings.threshold, color='blue', linestyle='--', linewidth=0.5)
+            lines.append(line)
+        for line in lines[:-1]:
+            line.remove()
+            lines.remove(line)    
         if cid is not None:
             fig.canvas.mpl_disconnect(cid)
         cid = fig.canvas.mpl_connect('button_press_event', onclick)
@@ -215,97 +238,74 @@ def UI_run(settings : Settings, shared_dict : dict):
     
         #print("x: " + str(x_val1))
         #print("y: " + str(y_val1))
-        interactive_metrics = [settings.threshold, x_val1, y_val1]
+        interactive_metrics = [settings.threshold, x_val1, y_temp[int(x_val1)]]
 
         time.sleep(0.00001)
         new_threshold= UI_obj.run_real_time(data= shared_dict, metrics = metrics, interactive_metrics = interactive_metrics)
         settings.threshold = new_threshold
-
+    
 
 if __name__ == "__main__":
-
-    #start with default settings for arduino and acquisition
-    settings= Settings(n_channels=1024)
-
-    print("Settings: " + str(settings))
-
-    #setup directory for file storage
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-
-    #change directory to the new folder to save data
-    #if directory not found, create it
-    directory_save_folder = os.path.join((dir_path),"DataAcquisition")
-
-    if not os.path.exists(directory_save_folder):
-        os.makedirs(directory_save_folder)
-        print("Created savefile directory at " + directory_save_folder)
-        #change directory to the new folder
-        os.chdir(directory_save_folder)
-    else:
-        #change directory to the new folder
-        os.chdir(directory_save_folder)
-
-
-    root = tk.Tk()
-    setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x100")
-
-    #n_acquisitions , t_acquisition = setup_window.return_params()
-    settings.n_acquisitions, settings.t_acquisition = setup_window.return_params()
-
-    print("Number of acquisitions:", str(int(settings.n_acquisitions)))
-    print("Acquisition time:", str(settings.t_acquisition), " seconds")
-
-    print(".....................Starting data acquisition.....................")
-    print("Number of acquisitions:", str(int(settings.n_acquisitions)))
-    print("Acquisition time:", str(settings.t_acquisition), " seconds")
 
     #manager for shared memory dictionary
     manager = multiprocessing.Manager()
     lock= multiprocessing.Lock()
+    
+
+    root = tk.Tk()
+    setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x200")
+
+    input_settings= setup_window.return_params()
+    settings= Settings(n_channels=input_settings.n_channels)
+    manager.register('Settings', Settings)
+    print("Received parameters:")
+    setup_window.print_params()
+
+
+    if not os.path.exists(input_settings.savefile_directory):
+        os.makedirs(input_settings.savefile_directory)
+        print("Directory did not exist. Created savefile directory at " + input_settings.savefile_directory)
+        #change directory to the new folder
+        os.chdir(input_settings.savefile_directory)
+    else:
+        #change directory to the new folder
+        os.chdir(input_settings.savefile_directory)
+    
+    print(".....................Starting data acquisition.....................")
+    print("Number of acquisitions:", str(int(input_settings.n_acquisitions)))
+    print("Acquisition time:", str(input_settings.t_acquisition), " seconds")
+
+
 
     current_acquisition_dict = manager.dict()
     #set entire dictionary to 0
-    #current_acquisition_dict = {i:0 for i in range(n_channels)}
     for key in range(settings.n_channels):
         current_acquisition_dict[key] = 0
 
-       
+    settings.update_with_inputs(input_settings)   
 
     #dictionary with all settings for the current acquisition 
     settings_dict = manager.dict()
-    settings_dict["n_channels"] = 1024
-    settings_dict["arduino_port"] = "COM3"
-    settings_dict["baud"] = 9600
-    settings_dict["n_acquisitions"] = settings.n_acquisitions
-    settings_dict["t_acquisition"] = settings.t_acquisition
-    settings_dict["dir_path"] = dir_path
-    settings_dict["acquisition_filesave"] = directory_save_folder
     settings_dict["stop_flag"] = 0
 
    
 
-    all_arr= []
-
     #create new process to read data from arduino 
-    read_data = multiprocessing.Process(target=create_device_read_process, args=(all_arr, current_acquisition_dict, settings_dict,lock, settings))
+    read_data = multiprocessing.Process(target=create_device_read_process, 
+                                        args=(current_acquisition_dict, settings_dict,lock, settings))
 
-    #process to print the shared dictionary
-    print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict, settings_dict, lock))
 
     #create UI process
-    ui_process = multiprocessing.Process(target=UI_run, args=(settings,current_acquisition_dict))
+    ui_process = multiprocessing.Process(target=UI_run, 
+                                            args=(settings,current_acquisition_dict))
 
-
+    
 
     #starting all processes
     read_data.start()
-    print_dict_proc.start()
     ui_process.start()
     
-
     #wait for all processes to finish
     read_data.join()
-    print_dict_proc.join()
     ui_process.join()
     
-

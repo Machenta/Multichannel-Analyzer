@@ -31,8 +31,23 @@ class UI_Window(tk.Frame):
         self.standard_entry_size = (10,30)
         self.standard_entry_font = ("Helvetica", 12)
         self.threshold = 0 
+        self.stop = False
 
 
+        #adding a menu bar
+        
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.menu_bar.add_cascade(label="Edit", menu=self.edit_menu)
+        self.menu_bar.add_cascade(label="Analysis", menu=self.edit_menu)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+        self.file_menu.add_command(label="Open", command=lambda: print("Open"))
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=lambda: print("Exit"))
 
 
         #create default figure for the multichannel plot
@@ -103,7 +118,13 @@ class UI_Window(tk.Frame):
         self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold)
         self.threshold_entry.config(width=self.standard_entry_size[0], font=self.standard_entry_font)
         self.threshold_entry.grid(row=0, column=1, sticky="nsew")
+        self.threshold_entry.bind("<Return>", self.get_threshold_bind)
     
+        #create a button to stop the acquisition and add it to the config frame
+        self.stop_button = tk.Button(self.config_frame, text="Stop", command=self.stop_acquisition, width=self.standard_button_size[0], height=2)
+        self.stop_button.grid(row=1, column=0, sticky="nsew")
+        self.threshold_entry.grid(row=1, column=0, sticky="nsew")
+
 
         #create button to submit the threshold value and add it to the config frame
         self.threshold_button = tk.Button(self.config_frame, text="OK", command=self.get_threshold, width=self.standard_button_size[0], height=2)
@@ -122,9 +143,6 @@ class UI_Window(tk.Frame):
             if i < len(self.interactive_metrics):
                 self.interactive_metrics_values[i].config(text=str(int(interactive_metrics[i])))
                 self.interactive_metrics_values[i].update()
-            
-
-
         self.root.update()
         return self.threshold
 
@@ -136,8 +154,18 @@ class UI_Window(tk.Frame):
             print("Please enter a valid number")
             return float(0)
 
+    def get_threshold_bind(self,event=None):
+        try:
+            self.threshold = float(self.threshold_entry.get())
+        except:
+            print("Please enter a valid number")  
+            self.threshold = float(0)    
+
     def change_text_submitted(self):
         self.threshold_button(text="Threshold Submitted")
+
+    def stop_acquisition(self):
+        self.stop = True
 
     #define a function to combine multiple functions
     def combine_funcs(*funcs):
@@ -146,6 +174,8 @@ class UI_Window(tk.Frame):
                 f(*args, **kwargs)
         return combined_func
 
+    def stop(self):
+        self.root.destroy()
 
 #if __name__ == "__main__":
 #

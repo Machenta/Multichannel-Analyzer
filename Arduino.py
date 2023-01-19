@@ -12,7 +12,7 @@ import random
 
 #create serial object - Arduino
 class Arduino:
-    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, filename="analog-data.csv", sensor_data_all=[], n_channels=1024, current_dict={}):
+    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, sensor_data_all=[], n_channels=1024, current_dict={}):
         self.port = port
         self.baud = baud
         
@@ -30,7 +30,6 @@ class Arduino:
         #default time and number of acquisitions
         self.n_acquisitions = n_acquisitions
         self.acquisition_time = acquisition_time
-        self.filename = filename
         self.sensor_data_all = sensor_data_all
         self.channels=n_channels
         self.current_dict=current_dict
@@ -40,74 +39,6 @@ class Arduino:
     def return_data(array,instance):
         array.append(instance)
         return instance
-
-    def collect_data_with_plot(self, data_arr):
-
-        x=np.linspace(0, 10, self.channels)
-        y=np.linspace(0, 10, self.channels)
-        plt.ion() #
-
-        #create plot window to update in real time
-        fig = plt.figure()
-        ax1 = fig.add_subplot(1,1,1)
-        #set axis limits
-        ax1.set_ylim(0, 100)
-        ax1.set_xlim(0, self.channels)
-
-        line1, = ax1.plot(x, y, 'r-')
-
-        #create array to store all sensor data for each acquisition
-        sensor_data_all = []  # store data
-
-        while self.n < self.n_acquisitions:
-            print("Starting data collection: " + str(self.n) + " of " + str(self.n_acquisitions))
-            self.n = self.n + 1
-            timeout = time.time() + self.acquisition_time  # set the timeout
-    
-            # update filename
-            tempFilename = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + "-" + self.filename
-    
-            # open new file with new filename for new acquisition
-            f = open(tempFilename, "a")
-            print("Created file: " + tempFilename)
-    
-            # reset array
-            sensor_data = []  # store data
-
-            #create a dictionay to store the data with n_bins keys
-            data_dict = {i:0 for i in range(self.channels)}
-    
-            while time.time() < timeout:
-                # read data from serial port
-                var = float(self.ser.readline().decode("utf-8").strip())
-                # print(self.data)
-                # write data to file
-                sensor_data.append(var)
-                self.sensor_data_all.append(var)
-                data_arr.append(var)
-
-                print(var)
-
-                data_dict.update({int(var) : data_dict[int(var)] + 1})
-
-                #update plot 
-                line1.set_ydata(list(data_dict.values()))
-                fig.canvas.draw()
-                fig.canvas.flush_events()
-
-
-            #print("sensor_data: " + str(sensor_data))
-            print("Completed data collection: " + str(self.n) + " of " + str(self.n_acquisitions))
-            #write data to file
-            writer = csv.writer(f)
-            writer.writerow(sensor_data)
-
-
-            # close file
-            print("Data collection complete")
-            print("\n")
-            f.close()
-
 
     def open_connection(self):
         self.ser = serial.Serial(self.port, self.baud)
@@ -124,17 +55,8 @@ class Arduino:
         time.sleep(0.001)
         return val
 
-    def get_data_time_loop(self,sensor_data, current_dict, all_data):
+    def get_data_time_loop(self, current_dict, all_data):
         var = self.read_serial()
-        sensor_data.append(var)
-
-        #update dictionary with new data for the respective channel
-        #current_dict.update({int(var) : current_dict[int(var)] + 1})
-        all_data.append(var)
-
-        #print("var: " + str(var))
-        #print dictionary
-        #print("current_dict: " + str(current_dict))
         return var 
 
     def get_data_acquisition_loop(self, all_data):
