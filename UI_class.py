@@ -60,7 +60,7 @@ class UI_Window(tk.Frame):
             self.plot1.plot(y)
 
         #create frame for the multichannel plot
-        self.frame_multichannel = tk.Frame(self.root, width=700, height=700, relief = 'raised', bg='blue')
+        self.frame_multichannel = tk.Frame(self.root, width=700, height=700, relief = 'raised', bg='#ba994a')
         self.frame_multichannel.grid(sticky="nsew")
 
         #create canvas for the actual plot
@@ -69,7 +69,7 @@ class UI_Window(tk.Frame):
 
 
         #create frame for the metrics
-        self.frame_metrics = tk.Frame(self.root, width=700, height=400, relief = 'raised', bg='yellow', bd=1)
+        self.frame_metrics = tk.Frame(self.root, width=700, height=400, relief = 'raised', bg='white', bd=1)
         self.frame_metrics.grid(sticky="nsew",column=1,row=0)
 
         #adding labels to the metrics frame 
@@ -88,7 +88,7 @@ class UI_Window(tk.Frame):
 
 
         #create frame for the table with interactive metrics
-        self.frame_interactive_metrics = tk.Frame(self.root, width=200, height=700, relief = 'raised', bg='red', bd=1)
+        self.frame_interactive_metrics = tk.Frame(self.root, width=200, height=700, relief = 'raised', bg='#4ababa', bd=1)
         self.frame_interactive_metrics.grid(sticky="nsew",column=0,row=1)
 
         #adding labels to the interactive metrics frame
@@ -107,7 +107,7 @@ class UI_Window(tk.Frame):
 
 
         #create frame for the buttons 
-        self.config_frame = tk.Frame(self.root, width=200, height=200, relief = 'raised', bg='green', bd=1)
+        self.config_frame = tk.Frame(self.root, width=200, height=200, relief = 'raised', bg='#5abf4b', bd=1)
         self.config_frame.grid(sticky="nsew",column=1,row=1)
 
         #create entry box for the threshold value and add it to the config frame 

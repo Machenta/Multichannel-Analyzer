@@ -52,7 +52,7 @@ class AcquisitionSetupWindow(tk.Frame):
         self.acquisition_settings=AcquisitionSettings()
 
         #Aquisition Parameters Frame
-        self.acquisition_params_frame = tk.Frame(self.root , width=700, height=700, relief = 'raised', bg="blue")
+        self.acquisition_params_frame = tk.Frame(self.root , width=700, height=700, relief = 'raised', bg="white")
         self.acquisition_params_frame.grid(sticky="nsew")
 
         #define labels for number of acquisitions and acquisition time
@@ -85,7 +85,7 @@ class AcquisitionSetupWindow(tk.Frame):
 
 
         #Frame for directory select, file name and savefile directory
-        self.savefile_frame = tk.Frame(self.root,bg="red", width=400, height=100, bd=1, relief = 'raised')
+        self.savefile_frame = tk.Frame(self.root,bg="white", width=400, height=100, bd=1, relief = 'raised')
         self.savefile_frame.grid(sticky="nsew")
 
         #add label for file name

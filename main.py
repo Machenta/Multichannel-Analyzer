@@ -123,8 +123,7 @@ def collect_data(dev : Arduino, shared_dict : dict, settings_dict : dict, lock ,
                     val = dev.get_data_time_loop(sensor_data, shared_dict)
                     shared_dict[int(val)] += 1
                     shared_dict.update()
-                #t= dt.fromtimestamp(time())
-                #print("Time: " + str(t))
+
                 new_dict_timestamps[i] = dt.now().strftime('%Y-%m-%d %H:%M:%S.%f')
                 print(new_dict_timestamps[i])
                 i+=1    
@@ -282,7 +281,7 @@ if __name__ == "__main__":
     
 
     root = tk.Tk()
-    setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x200")
+    setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "300x150")
 
     input_settings= setup_window.return_params()
     settings= Settings(n_channels=input_settings.n_channels)
