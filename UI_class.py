@@ -120,15 +120,17 @@ class UI_Window(tk.Frame):
         self.threshold_entry.grid(row=0, column=1, sticky="nsew")
         self.threshold_entry.bind("<Return>", self.get_threshold_bind)
     
-        #create a button to stop the acquisition and add it to the config frame
-        self.stop_button = tk.Button(self.config_frame, text="Stop", command=self.stop_acquisition, width=self.standard_button_size[0], height=2)
-        self.stop_button.grid(row=1, column=0, sticky="nsew")
-        self.threshold_entry.grid(row=1, column=0, sticky="nsew")
-
-
         #create button to submit the threshold value and add it to the config frame
         self.threshold_button = tk.Button(self.config_frame, text="OK", command=self.get_threshold, width=self.standard_button_size[0], height=2)
         self.threshold_button.grid(row=0, column=2, sticky="nsew")
+
+        #create a button to stop the acquisition and add it to the config frame
+        self.stop_button = tk.Button(self.config_frame, text="Stop", command=self.stop_acquisition, width=self.standard_button_size[0], height=2)
+        self.stop_button.grid(row=1, column=0, sticky="nsew")
+        self.stop_button.grid(row=1, column=0, sticky="nsew")
+
+
+        
 
     def run(self):
         self.root.update()

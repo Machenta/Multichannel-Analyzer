@@ -1,5 +1,6 @@
 import tkinter as tk
 from dataclasses import dataclass, field
+import re
 import os
 #def main():
 #    root = tk.Tk()
@@ -19,7 +20,7 @@ class AcquisitionSettings:
     default_filename: str = "-Analog-data.csv"
     default_folder: str = "DataAcquisition"
     savefile_directory: str = os.path.join((os.path.dirname(os.path.realpath(__file__))),default_folder)
-    n_channels: int = 1024
+    n_channels: int = 10
 
     def print(self):
         print("Number of acquisitions:", self.n_acquisitions)
@@ -38,6 +39,7 @@ class AcquisitionSetupWindow(tk.Frame):
         self.root.geometry(geometry)
         self.filename = "-Analog-data.csv"
         self.directory = None
+        self.forbidden_characters = "[^a-zA-Z0-9_.-]"
         self.label_size = [20,1]
         self.standard_font = ("Helvetica", 12)
         self.standard_button_size = (5,5)
@@ -94,6 +96,7 @@ class AcquisitionSetupWindow(tk.Frame):
         self.acquisition_settings.default_filename = tk.StringVar()
         self.file_name_entry = tk.Entry(self.savefile_frame, textvariable=self.acquisition_settings.default_filename)
         self.file_name_entry.insert(0,"Spectrum-data")
+        self.file_name_entry.config(validate="key", validatecommand=lambda: self.validate(self.file_name_entry.get()))
         self.file_name_entry.grid(row=0, column=1, sticky="nsew")
 
         #add button for file name
@@ -125,8 +128,18 @@ class AcquisitionSetupWindow(tk.Frame):
 
 
     def get_acquisitions_params(self): 
-        self.acquisition_settings.n_acquisitions = int(self.n_acquisitions_entry.get())
-        self.acquisition_settings.t_acquisition = float(self.time_acquisition_entry.get())
+        try: 
+            self.acquisition_settings.n_acquisitions = int(self.n_acquisitions_entry.get())
+        except ValueError:
+            self.acquisition_settings.n_acquisitions = None
+            tk.messagebox.showerror("Error","Please enter an integer value for the number of acquisitions")
+
+        try:    
+            self.acquisition_settings.t_acquisition = float(self.time_acquisition_entry.get())
+        except ValueError:
+            self.acquisition_settings.n_acquisitions = None
+            tk.messagebox.showerror("Error","Please enter an integer value for the acquisition time")
+
         self.acquisition_settings.default_filename = self.file_name_entry.get()
         #self.acquisition_settings.savefile_directory = self.directory
         #self.acquisition_settings.print()
@@ -147,10 +160,15 @@ class AcquisitionSetupWindow(tk.Frame):
             tk.messagebox.showerror("Error","Please enter an integer value for the acquisition time")
 
     def get_filename(self): 
+        self.acquisition_settings.default_filename = re.sub(self.forbidden_characters, "", self.file_name_entry.get())
         #get value from entry box and save it in n_acquisitions variable
         #print("type of n_acquisitions_entry:", type(self.n_acquisitions_entry))
         self.acquisition_settings.default_filename = self.file_name_entry.get()
-
+        if not self.acquisition_settings.default_filename:
+            self.acquisition_settings.default_filename = None
+            tk.messagebox.showerror("Error","Forbidden characters found in the input, please enter a new name")
+        else:
+            None
     def open_file_dialog(self):
         self.acquisition_settings.savefile_directory = tk.filedialog.askdirectory()
         print(self.acquisition_settings.savefile_directory)
@@ -182,6 +200,13 @@ class AcquisitionSetupWindow(tk.Frame):
                 f(*args, **kwargs)
         return combined_func
 
+    def validate(self, P):
+        self.forbidden_characters = "[^a-zA-Z0-9_.-]"
+        if re.search(self.forbidden_characters, P):
+            self.file_name_entry.bell()
+            return False
+        else:
+            return True
 
 
 
