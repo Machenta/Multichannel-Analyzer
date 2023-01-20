@@ -20,7 +20,7 @@ class AcquisitionSettings:
     default_filename: str = "-Analog-data.csv"
     default_folder: str = "DataAcquisition"
     savefile_directory: str = os.path.join((os.path.dirname(os.path.realpath(__file__))),default_folder)
-    n_channels: int = 10
+    n_channels: int = 512
 
     def print(self):
         print("Number of acquisitions:", self.n_acquisitions)
@@ -32,7 +32,9 @@ class AcquisitionSettings:
 
 
 class AcquisitionSetupWindow(tk.Frame):
-    def __init__(self, root, title="Acquisition Settings", geometry="500x200"):
+    def __init__(self, root , 
+                    title : str = "Acquisition Settings", 
+                    geometry : str = "500x200"):
         super().__init__(root)
         self.root=root
         self.root.title(title)

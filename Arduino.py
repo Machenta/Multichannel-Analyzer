@@ -12,7 +12,14 @@ import random
 
 #create serial object - Arduino
 class Arduino:
-    def __init__(self, port= "COM3", baud = 9600, n_acquisitions=1, acquisition_time=5, sensor_data_all=[], n_channels=1024, current_dict={}):
+    def __init__(self, port : str = "COM3", 
+                    baud : int = 9600, 
+                    n_acquisitions : int = 1, 
+                    acquisition_time : int =5, 
+                    sensor_data_all : list = [], 
+                    n_channels : int = 1024, 
+                    current_dict={}):
+                    
         self.port = port
         self.baud = baud
         
@@ -49,9 +56,9 @@ class Arduino:
         print("Closed connection to Arduino port: " + self.port + "at " + str(self.baud) + " baud.")    
 
     def read_serial(self):
-        #val = float(self.ser.readline().decode("utf-8").strip())
+        val = float(self.ser.readline().decode("utf-8").strip())
         #get a random number according to a guassian distribution mean 5 standard deviation 1
-        val = random.randint(0, self.channels-1)
+        #val = random.randint(0, self.channels-1)
         time.sleep(0.001)
         return val
 
