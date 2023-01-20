@@ -1,5 +1,6 @@
 import time
 import multiprocessing
+from multiprocessing.managers import BaseManager
 import serial
 import numpy as np
 from datetime import datetime as dt
@@ -19,38 +20,8 @@ import UI_class
 #import PlotInteraction as pi
 import Arduino
 import AcquisitionSetupWindowv2 as acq
+import Settings 
 
-
-@dataclass
-class Settings:
-    stop_flag : bool = False
-    n_channels : int = 10
-    arduino_port : str = "COM3"
-    baud : int = 9600
-    n_acquisitions : int = 1
-    t_acquisition : int = 4
-    dir_path : str = os.path.dirname(os.path.realpath(__file__))
-    default_save_folder: str = "DataAcquisition"
-    acquisition_filesave_path: str = os.path.join(dir_path, default_save_folder)
-    settings_dict: dict = field(default_factory=dict)
-    stop_flag : bool = False
-    threshold : int = 0
-    default_filename : str = "AnalogData"
-    current_n : int =0
-
-    def update_with_inputs (self, parms : acq.AcquisitionSettings):
-        self.n_acquisitions = parms.n_acquisitions
-        self.t_acquisition = parms.t_acquisition
-        self.dir_path = parms.savefile_directory
-        self.default_save_folder = parms.default_folder
-        self.default_filename = parms.default_filename
-
-    def create_header(self):
-        h = ["ADC Channels: " +  str(self.n_channels),
-        "Number of Acquisitions: " + str(self.n_acquisitions),
-        "Preset Time: " + str(self.t_acquisition),
-        "Save Directory: " + str(self.acquisition_filesave_path)]
-        return h
 
 
 
@@ -265,6 +236,20 @@ def UI_run(settings : Settings, shared_dict : dict, settings_dict ):
 def print_dict(dict, lock):
         print("Shared dict: " + str(dict))
 
+def print_sets1(settings : Settings, lock : multiprocessing.Lock):
+    while True:
+        with lock:
+            settings.update_baud(100)
+            print("Settings 1: " + str(settings.baud))
+        time.sleep(0.5)
+
+def print_sets2(settings : Settings, lock : multiprocessing.Lock):
+    while True:
+        with lock:
+            settings.update_baud(200)
+            print("Settings 2: " + str(settings.get_baud))
+        time.sleep(0.5)
+
 if __name__ == "__main__":
 
     #manager and lock for shared memory dictionary
@@ -276,10 +261,18 @@ if __name__ == "__main__":
     setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "450x150")
 
     input_settings= setup_window.return_params()
-    settings= Settings(n_channels=input_settings.n_channels)
-    manager.register('Settings', Settings)
+    settings= Settings.Settings(n_channels=input_settings.n_channels)
+    manager.register('Settings', Settings.Settings)
     print("Received parameters:")
     setup_window.print_params()
+
+
+    #create custom shared dataclass with all the settings to passed between processes
+    BaseManager.register('Settings', Settings.Settings)
+    settings_manager = BaseManager()
+    settings_manager.start()
+    settings_lock= multiprocessing.Lock()
+    global_settings = settings_manager.Settings(n_channels=10)
 
 
     if not os.path.exists(input_settings.savefile_directory):
@@ -322,13 +315,22 @@ if __name__ == "__main__":
 
     print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict,lock))
 
+
+    print_settings_proc1 = multiprocessing.Process(target=print_sets1, args=(global_settings, settings_lock))
+    print_settings_proc2 = multiprocessing.Process(target=print_sets2, args=(global_settings, settings_lock))
+
     #starting all processes
     read_data.start()
     ui_process.start()
     print_dict_proc.start()
+    print_settings_proc1.start()
+    print_settings_proc2.start()
     
     #wait for all processes to finish
     read_data.join()
     ui_process.join()
     print_dict_proc.join()
+    print_settings_proc1.join()
+    print_settings_proc2.join()
+
     
