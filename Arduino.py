@@ -56,10 +56,10 @@ class Arduino:
         print("Closed connection to Arduino port: " + self.port + "at " + str(self.baud) + " baud.")    
 
     def read_serial(self):
-        val = float(self.ser.readline().decode("utf-8").strip())
+        #val = float(self.ser.readline().decode("utf-8").strip())
         #get a random number according to a guassian distribution mean 5 standard deviation 1
-        #val = random.randint(0, self.channels-1)
-        time.sleep(0.001)
+        val = random.randint(0, self.channels-1)
+        time.sleep(0.0001)
         return val
 
     def get_data_time_loop(self, current_dict, all_data):

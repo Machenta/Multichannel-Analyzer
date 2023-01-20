@@ -116,27 +116,19 @@ def collect_data(dev : Arduino, shared_dict : dict, settings_dict : dict, lock ,
 
             f_t = open(fileName_t_stamp, "a")
             writer_t = csv.writer(f_t)
-            writer_t.writerow(settings.create_header())
+        
 
             while time.time() < timeout:
                 with lock:
                     val = dev.get_data_time_loop(sensor_data, shared_dict)
                     shared_dict[int(val)] += 1
-                    shared_dict.update()
-
-                new_dict_timestamps[i] = dt.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                #print(new_dict_timestamps[i])
-                i+=1    
-                time.sleep(0.00001)
+                    shared_dict.update()   
 
             print("Completed data collection: " + str(dev.n + 1) + " of " + str(dev.n_acquisitions))
             #write data to file
-            print("Data to be written to file:" + str(shared_dict))
+            #print("Data to be written to file:" + str(shared_dict))
             for key, value in shared_dict.items():
                 writer.writerow([key, value])
-
-            for key, value in new_dict_timestamps.items():
-                writer_t.writerow([key, value])
             #writer.writerow(sensor_data)
             print("Saved data to file: " + fileName)
             # close file
@@ -265,17 +257,17 @@ def UI_run(settings : Settings, shared_dict : dict, settings_dict ):
         #print("y: " + str(y_val1))
         interactive_metrics = [settings.threshold, x_val1, y_temp[int(x_val1)]]
         #print(settings_dict["current_n"])
-        time.sleep(0.00001)
         new_threshold= UI_obj.run_real_time(data= shared_dict, metrics = metrics, interactive_metrics = interactive_metrics)
         settings.threshold = new_threshold
+        time.sleep(0.1)
     
 
-#def print_dict(dict, lock):
-#        print("Shared dict: " + str(dict))
+def print_dict(dict, lock):
+        print("Shared dict: " + str(dict))
 
 if __name__ == "__main__":
 
-    #manager for shared memory dictionary
+    #manager and lock for shared memory dictionary
     manager = multiprocessing.Manager()
     lock= multiprocessing.Lock()
     
@@ -328,15 +320,15 @@ if __name__ == "__main__":
     ui_process = multiprocessing.Process(target=UI_run, 
                                             args=(settings,current_acquisition_dict, settings_dict))
 
-    #print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict,lock))
+    print_dict_proc = multiprocessing.Process(target=print_dict, args=(current_acquisition_dict,lock))
 
     #starting all processes
     read_data.start()
     ui_process.start()
-    #print_dict_proc.start()
+    print_dict_proc.start()
     
     #wait for all processes to finish
     read_data.join()
     ui_process.join()
-    #print_dict_proc.join()
+    print_dict_proc.join()
     
