@@ -8,7 +8,7 @@ class Settings:
     stop_flag : bool = False
     n_channels : int = 10
     arduino_port : str = "COM3"
-    baud : int = 9600
+    baud : multiprocessing.Value = multiprocessing.Value('i', 9600)
     n_acquisitions : int = 1
     t_acquisition : int = 4
     dir_path : str = os.path.dirname(os.path.realpath(__file__))
@@ -35,7 +35,7 @@ class Settings:
         return h
 
     def update_baud(self,n):
-        self.baud = n
+        self.baud.value = n
 
     def get_baud(self):
         return int(self.baud)   
