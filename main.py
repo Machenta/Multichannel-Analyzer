@@ -16,11 +16,10 @@ import random
 matplotlib.use("TkAgg")
 
 #My imports
-import UI_class
+import UI
 #import PlotInteraction as pi
 import Arduino
 import AcquisitionSetupWindowv2 as acq
-
 
 
 
@@ -59,48 +58,50 @@ def collect_data(dev : Arduino,
                     lock : multiprocessing.Lock):
     
     n=0
-    if settings_dict["stop_flag"] == False:
-        while n < settings_dict["n_acquisitions"]:
+    while settings_dict["stop_flag"] == False:
+        while settings_dict["running_acquisition"]== True:
+            while n < settings_dict["n_acquisitions"]:
+                print("Starting data collection: " + str(n + 1) + " of " + str(settings_dict["n_acquisitions"]))
+                #update settings dictionary
+                settings_dict["current_n"] = n + 1
+                #reset dictionary
+                for key in range(settings_dict["n_channels"]):
+                    shared_dict[key] = 0
+                #get the current time and set the timeout
+                timeout = time.time() + settings_dict["t_acquisition"] #set the timeout
+                sensor_data = []
+                #update filename
+                fileName = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + "-"+ settings_dict["savefile_default_name"] + "_" + str(n).zfill(4) + settings_dict["savefile_format"]
+                #open new file with new filename for new acquisition 
+                f = open(fileName, "a")
+                print("Created file: " + fileName)
+                writer = csv.writer(f)
+                writer.writerow("HEADER DATA PLACEHOLDER") 
+                while time.time() < timeout:
+                    with lock:
+                        val = dev.get_data_time_loop(sensor_data, shared_dict)
+                        shared_dict[int(val)] += 1
+                        shared_dict.update()   
+                print("Completed data collection: " + str(dev.n + 1) + " of " + str(dev.n_acquisitions))
+                #write data to file
+                #print("Data to be written to file:" + str(shared_dict))
+                for key, value in shared_dict.items():
+                    writer.writerow([key, value])
+                #writer.writerow(sensor_data)
+                print("Saved data to file: " + fileName)
+                # close file
+                print("Data collection complete")
+                print("\n")
+                f.close()
+                n=n+1
+                if n == settings_dict["n_acquisitions"]:
+                    with lock:
+                        settings_dict["stop_flag"] = True
+                        settings_dict.update()
+                        print("change stop flag to true inside collect data loop")
 
-            #update settings dictionary
-            settings_dict["current_n"] = n
-            #reset dictionary
-            for key in range(settings_dict["n_channels"]):
-                shared_dict[key] = 0
-            #get the current time and set the timeout
-            timeout = time.time() + settings_dict["t_acquisition"] #set the timeout
-            sensor_data = []
-
-            #update filename
-            fileName = dt.now().strftime("%Y_%m_%d-%H_%M_%S") + "-"+ settings_dict["savefile_default_name"] + "_" + str(n).zfill(4) + settings_dict["savefile_format"]
-            #open new file with new filename for new acquisition 
-            f = open(fileName, "a")
-            print("Created file: " + fileName)
-            writer = csv.writer(f)
-            writer.writerow("HEADER DATA PLACEHOLDER") 
-        
-
-            while time.time() < timeout:
-                with lock:
-                    val = dev.get_data_time_loop(sensor_data, shared_dict)
-                    shared_dict[int(val)] += 1
-                    shared_dict.update()   
-
-            print("Completed data collection: " + str(dev.n + 1) + " of " + str(dev.n_acquisitions))
-            #write data to file
-            #print("Data to be written to file:" + str(shared_dict))
-            for key, value in shared_dict.items():
-                writer.writerow([key, value])
-            #writer.writerow(sensor_data)
-            print("Saved data to file: " + fileName)
-            # close file
-            print("Data collection complete")
-            print("\n")
-            f.close()
-            n=n+1
-        
-
-    settings_dict["stop_flag"] = True
+                print("Stop Flag inside collect data: " + str(settings_dict["stop_flag"]))
+    print("escaped while loop")
 
 
 def launch_setup_window():
@@ -146,7 +147,6 @@ def UI_run(settings : dict, shared_dict : dict):
     
     #first we create the figure to pass to the UI class
     x=np.linspace(1, settings["n_channels"], settings["n_channels"])
-    #print("x: " + str(x))
     y=np.linspace(1, settings["n_channels"], settings["n_channels"])
     fig, ax1  = plt.subplots()
     ax1.set_ylim(0, 100)
@@ -160,9 +160,10 @@ def UI_run(settings : dict, shared_dict : dict):
     
     line1, = ax1.plot(x, y, 'r-')
     line2 = ax1.scatter(x, y, c='b', marker='o', s=10, alpha=0.5)
-    #create the UI object
+
+    #create the main window
     root= tk.Tk()
-    UI_obj= UI_class.UI_Window(root, title = "Data Acquisition", geometry = "1000x700", matplot_fig = fig)
+    UI_obj= UI.UI_Window(root, title = "Data Acquisition", geometry = "1000x700", matplot_fig = fig)
 
     t_start = time.time()
     now=dt.now().strftime("%Y/%m/%d - %H:%M:%S")
@@ -170,8 +171,8 @@ def UI_run(settings : dict, shared_dict : dict):
     xvalue= None
     lines = []
     #main UI window loop
-    while not settings["stop_flag"]:
-
+    while settings["stop_flag"] == False:
+        print("Stop Flag inside RUN UI at the START: " + str(settings["stop_flag"]))
         #getting metrics from the data acquisition process
         total_counts = sum(shared_dict.values())
         start_time = now
@@ -218,14 +219,111 @@ def UI_run(settings : dict, shared_dict : dict):
         new_threshold= UI_obj.run_real_time(data= shared_dict, metrics = metrics, interactive_metrics = interactive_metrics)
         settings["threshold"] = new_threshold
         time.sleep(0.1)
+
+        print("Stop Flag inside RUN UI at the END: " + str(settings["stop_flag"]))
     
+
+def launch_main_window(settings : dict, shared_dict : dict):
+
+    
+    #first we create the figure to pass to the UI class
+    x=np.linspace(1, settings["n_channels"], settings["n_channels"])
+    y=np.linspace(1, settings["n_channels"], settings["n_channels"])
+    fig, ax1  = plt.subplots()
+    ax1.set_ylim(0, 100)
+    ax1.set_xlim(0, settings["n_channels"])
+    ax1.set_title("Data Acquisition")
+    ax1.set_xlabel("Channel")
+    ax1.set_ylabel("Counts")
+    ax1.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
+    
+    #draw a tentative plot 
+    
+    line1, = ax1.plot(x, y, 'r-')
+    line2 = ax1.scatter(x, y, c='b', marker='o', s=10, alpha=0.5)
+
+    #create the main window using the UI class
+    root= tk.Tk()
+    win = UI.UI_Window(root, title = "Main window", geometry = "1000x700", matplot_fig = fig)
+
+    t_start = time.time()
+    now=dt.now().strftime("%Y/%m/%d - %H:%M:%S")
+    cid = None
+    xvalue= None
+    lines = []
+    #main UI window loop that runs the acquisition is stopped and the command is given to terminate the program
+    while settings["stop_flag"] == False and win.main_program_open == True:
+        #loop that runs the acquisition if the command is given to start it
+        while win.running_acquisition == True:
+            #updating the settings dictionary with the values entered by the user 
+            settings["running_acquisition"] = win.running_acquisition
+            settings["n_acquisitions"] = win.acquisition_settings.n_acquisitions
+            settings["t_acquisition"] = win.acquisition_settings.t_acquisition
+            #print("Stop Flag inside RUN UI at the START: " + str(settings["stop_flag"]))
+            #getting metrics from the data acquisition process
+            total_counts = sum(shared_dict.values())
+            start_time = now
+            preset_time = settings["t_acquisition"] 
+            n_channels = settings["n_channels"]
+            n_acquisitions = settings["n_acquisitions"]
+            current_acquisition = settings["current_n"]
+            #t_elapsed is the minimum of the elapsed time and the preset time
+            t_elapsed = min(round(time.time() - t_start,1), preset_time)
+            count_rate = round(float(total_counts)/(t_elapsed+0.0001),2)
+
+            metrics= [total_counts, start_time, preset_time, n_channels, n_acquisitions, current_acquisition, t_elapsed, count_rate]
+
+            #update y_data taking into account the threshold and replace the erased values by zeros
+            if settings["clear_plot"] == True:
+                for key in range(settings["n_channels"]):
+                    shared_dict[key] = 0
+                y_temp = [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
+                settings["clear_plot"] = False
+            else:
+                y_temp= [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
+            #line1.set_ydata(list(shared_dict.values()))
+            print("y_temp: " + str(y_temp))
+
+            line1.set_ydata(y_temp)
+            line1.set_xdata(x)
+            line2.set_offsets(np.c_[x,y_temp])
+
+            ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
+            # clear the fill
+            #fill.remove()
+            #ax1.fill_between(x, y_temp, color='red', alpha=0.5)
+
+            if settings["threshold"] != 0: 
+                line = ax1.axvline(x=settings["threshold"], color='blue', linestyle='--', linewidth=0.5)
+                lines.append(line)
+            for line in lines[:-1]:
+                line.remove()
+                lines.remove(line)    
+            if cid is not None:
+                fig.canvas.mpl_disconnect(cid)
+            cid = fig.canvas.mpl_connect('button_press_event', onclick)
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+
+            #print("x: " + str(x_val1))
+            #print("y: " + str(y_val1))
+            interactive_metrics = [settings["threshold"], x_val1, y_temp[int(x_val1)]]
+            #print(settings_dict["current_n"])
+            new_threshold= win.run_real_time(metrics = metrics, interactive_metrics = interactive_metrics)
+            settings["threshold"] = new_threshold
+            time.sleep(0.1)
+
+            print("Stop Flag inside RUN UI at the END: " + str(settings["stop_flag"]))
+
+        win.root.update() 
+        time.sleep(0.1)   
+
 
 if __name__ == "__main__":
 
     #manager and lock for shared memory dictionary
     manager = multiprocessing.Manager()
     lock= multiprocessing.Lock()
-    
     
 
     #shared dictionary
@@ -241,6 +339,8 @@ if __name__ == "__main__":
     settings["t_elapsed"] : float = 0
     settings["count_rate"] : float = 0
     settings["baud"] : int = 9600
+    settings["clear_plot"] : bool = False
+    settings["running_acquisition"] : bool = False
     settings["savefile_default_name"] : str = "Analog_Data"
     settings["savefile_default_folder"] : str = "DataAcquisition"
     settings["savefile_format"] : str = ".csv"
@@ -256,7 +356,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "450x150")
 
-    #input_settings= setup_window.return_params()
+    input_settings= setup_window.return_params()
     #settings= Settings.Settings(n_channels=input_settings.n_channels)
     #manager.register('Settings', Settings.Settings)
     #print("Received parameters:")
@@ -298,18 +398,21 @@ if __name__ == "__main__":
     #create UI process
     ui_process = multiprocessing.Process(target=UI_run, 
                                             args=(settings,
-                                                current_acquisition_dict))
+                                                    current_acquisition_dict))
 
 
-
-
+    main_window_process = multiprocessing.Process(target=launch_main_window,
+                                                    args=(settings,
+                                                            current_acquisition_dict))
 
     #starting all processes
     read_data.start()
-    ui_process.start()
+    #ui_process.start()
+    main_window_process.start()
 
     #wait for all processes to finish
     read_data.join()
-    ui_process.join()
+    #ui_process.join()
+    main_window_process.join()
 
     

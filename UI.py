@@ -12,17 +12,17 @@ import AcquisitionSetupWindow as acq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from dataclasses import dataclass, field
 
-
+import AcquisitionSetupWindowv2 as acq
 
 class UI_Window(tk.Frame):
     def __init__(self, master=None, title="UI", geometry="900x900", matplot_fig=None):
         super().__init__(master)
-        self.root=master
+        self.root= master
         self.root.title(title)
         self.root.geometry(geometry)
         self.matplot_fig = matplot_fig
         self.label_width = 20
-        self.label_height = 5
+        self.label_height = 3
         self.standard_font = ("Helvetica", 12)
         self.standard_button_size = (5,5)
         self.standard_button_font = ("Helvetica", 12)
@@ -32,6 +32,12 @@ class UI_Window(tk.Frame):
         self.standard_entry_font = ("Helvetica", 12)
         self.threshold = 0 
         self.stop = False
+        self.main_program_open = True
+        self.running_acquisition = False
+        self.clear_flag = False
+
+        #Acquisition Settings object to store all the acquisition settings in a single object
+        self.acquisition_settings = acq.AcquisitionSettings()
 
 
         #adding a menu bar
@@ -42,12 +48,13 @@ class UI_Window(tk.Frame):
         self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
-        self.menu_bar.add_cascade(label="Edit", menu=self.edit_menu)
+        self.menu_bar.add_cascade(label="Acquisition Setup", menu=self.edit_menu)
         self.menu_bar.add_cascade(label="Analysis", menu=self.edit_menu)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
-        self.file_menu.add_command(label="Open", command=lambda: print("Open"))
+        self.file_menu.add_command(label="Open", command = lambda: print("Open"))
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=lambda: print("Exit"))
+        self.file_menu.add_command(label="Exit", command = self.change_win_status)
+        self.edit_menu.add_command(label="Acquisition Setup", command= self.launch_setup_window)
 
 
         #create default figure for the multichannel plot
@@ -74,7 +81,7 @@ class UI_Window(tk.Frame):
 
         #adding labels to the metrics frame 
         
-        self.label_names= ["Total Counts", "Start Time" , "Preset Time","ADC Channels","Number of Samples", "Time Elapsed" , "Count Rate (Hz)"]
+        self.label_names= ["Total Counts", "Start Time" , "Preset Time", "ADC Channels", "Number of Acquisitions", "Current Acquisition", "Time Elapsed" , "Count Rate (Hz)"]
         self.name_table = [0 for label in self.label_names]
 
         for i in range(len(self.label_names)):
@@ -124,20 +131,41 @@ class UI_Window(tk.Frame):
         self.threshold_button = tk.Button(self.config_frame, text="OK", command=self.get_threshold, width=self.standard_button_size[0], height=2)
         self.threshold_button.grid(row=0, column=2, sticky="nsew")
 
-        #create a button to stop the acquisition and add it to the config frame
-        self.stop_button = tk.Button(self.config_frame, text="Stop", command=self.stop_acquisition, width=self.standard_button_size[0], height=2)
-        self.stop_button.grid(row=1, column=0, sticky="nsew")
+        #create a button to start the acquisition and add it to the config frame
+        self.stop_button = tk.Button(self.config_frame, text="Start", command=self.run_acquisition, width=self.standard_button_size[0], height=2)
         self.stop_button.grid(row=1, column=0, sticky="nsew")
 
+        #create a button to stop the acquisition and add it to the config frame
+        self.stop_button = tk.Button(self.config_frame, text="Stop", command=self.stop_acquisition, width=self.standard_button_size[0], height=2)
+        self.stop_button.grid(row=1, column=1, sticky="nsew")
+
+        #create a button to clear the acquisition and add it to the config frame
+        self.clear_button = tk.Button(self.config_frame, text="Clear", command=self.clear_acquisition, width=self.standard_button_size[0], height=2)
+        self.clear_button.grid(row=1, column=2, sticky="nsew")
 
         
 
     def run(self):
         self.root.update()
 
+    def launch_setup_window(self):
+        #create the setup window 
+        top_level = tk.Toplevel(self.root)
+        self.setup_window = acq.AcquisitionSetupWindow(top_level, "Acquisition Setup", "450x150")
+        is_open = True
+        while is_open:
+            #print("is_open: ", is_open) 
+            self.setup_window.update()
+            time.sleep(0.3)
+            self.acquisition_settings = self.setup_window.return_params()
+            is_open = self.acquisition_settings.is_open
+            #print("self.acquisition_settings: ", self.acquisition_settings)
+
+        #print("Parameters: ", self.acquisition_settings)
+
     #A figure MUST be passed to this function as well a continuously updated data stream (data)
 
-    def run_real_time(self, data, metrics, interactive_metrics):
+    def run_real_time(self, metrics, interactive_metrics):
         #we must update the labels with the new updated metrics from the data stream
         for i in range(len(self.label_names)):
             self.value_table[i].config(text=str(metrics[i]))
@@ -167,7 +195,23 @@ class UI_Window(tk.Frame):
         self.threshold_button(text="Threshold Submitted")
 
     def stop_acquisition(self):
-        self.stop = True
+        self.running_acquisition = False
+        print("Stopping Acquisition: " + str(self.running_acquisition))
+
+    def run_acquisition(self):
+        self.running_acquisition = True
+        print("Running Acquisition: " + str(self.running_acquisition))
+
+    def clear_acquisition(self):
+        self.clear_flag = True
+        print("Clearing Acquisition: " + str(self.clear_flag))
+
+
+    def stop(self):
+        self.root.destroy()
+
+    def change_win_status(self):
+        self.main_program_open = False
 
     #define a function to combine multiple functions
     def combine_funcs(*funcs):
@@ -179,11 +223,22 @@ class UI_Window(tk.Frame):
     def stop(self):
         self.root.destroy()
 
-#if __name__ == "__main__":
-#
-#    root=tk.Tk()
-#    app=UI_Window(root)
-#    while True:
-#        app.run()
+def on_closing():
+    global run_condition
+    run_condition = False
+    root.destroy()
+
+
+if __name__ == "__main__":
+
+    root=tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    app=UI_Window(root)
+    run_condition = True
+    while run_condition:
+        app.run()
+        #print("app.acquisition_settings.n_acquisitions: " + str(app.acquisition_settings.n_acquisitions))
+        #print("app.acquisition_settings.t_acquisitions: " + str(app.acquisition_settings.t_acquisition))
+        #time.sleep(0.3)
         
     

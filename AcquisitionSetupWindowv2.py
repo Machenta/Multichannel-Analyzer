@@ -15,12 +15,13 @@ import os
 
 @dataclass
 class AcquisitionSettings:
-    n_acquisitions: int = 1
-    t_acquisition: float = 20
-    default_filename: str = "-Analog-data.csv"
-    default_folder: str = "DataAcquisition"
-    savefile_directory: str = os.path.join((os.path.dirname(os.path.realpath(__file__))),default_folder)
-    n_channels: int = 512
+    n_acquisitions : int = 1
+    t_acquisition : float = 20
+    default_filename : str = "-Analog-data.csv"
+    default_folder : str = "DataAcquisition"
+    savefile_directory : str = os.path.join((os.path.dirname(os.path.realpath(__file__))),default_folder)
+    n_channels : int = 512
+    is_open : bool = True
 
     def print(self):
         print("Number of acquisitions:", self.n_acquisitions)
@@ -120,33 +121,39 @@ class AcquisitionSetupWindow(tk.Frame):
         self.submit_frame.grid(sticky="nsew")
 
         #button to submit acquisition parameters and close window
-        self.submit_button = tk.Button(self.submit_frame, text="Submit all & start", command=self.get_acquisitions_params, width=41, height=2)
+        self.submit_button = tk.Button(self.submit_frame, text="Submit all", command=self.get_acquisitions_params, width=41, height=2)
         self.submit_button.grid(sticky="nsew")
         self.root.bind('<Return>', lambda event: self.submit_button.invoke())
-
-
-        self.root.mainloop()
 
 
 
     def get_acquisitions_params(self): 
         try: 
             self.acquisition_settings.n_acquisitions = int(self.n_acquisitions_entry.get())
+            print("self.acquisition_settings.n_acquisitions " + str(self.acquisition_settings.n_acquisitions))
         except ValueError:
             self.acquisition_settings.n_acquisitions = None
             tk.messagebox.showerror("Error","Please enter an integer value for the number of acquisitions")
 
         try:    
             self.acquisition_settings.t_acquisition = float(self.time_acquisition_entry.get())
+            print("self.acquisition_settings.t_acquisition " + str(self.acquisition_settings.t_acquisition))
         except ValueError:
             self.acquisition_settings.n_acquisitions = None
             tk.messagebox.showerror("Error","Please enter an integer value for the acquisition time")
 
         self.acquisition_settings.default_filename = self.file_name_entry.get()
+        self.acquisition_settings.is_open = False
         #self.acquisition_settings.savefile_directory = self.directory
         #self.acquisition_settings.print()
-        self.root.destroy()
-        
+        return True
+
+    def return_params(self):
+        return self.acquisition_settings
+
+    def run(self):
+        self.root.update()
+
     def get_n_acquisitions(self): 
         try: 
             self.acquisition_settings.n_acquisitions = int(self.n_acquisitions_entry.get())
@@ -185,8 +192,7 @@ class AcquisitionSetupWindow(tk.Frame):
     def print_params(self):
         self.acquisition_settings.print()
 
-    def return_params(self):
-        return self.acquisition_settings 
+    
 
     def run_app(self):
         self.root.destroy()
