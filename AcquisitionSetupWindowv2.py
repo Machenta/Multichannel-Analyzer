@@ -16,12 +16,13 @@ import os
 @dataclass
 class AcquisitionSettings:
     n_acquisitions : int = 1
-    t_acquisition : float = 20
+    t_acquisition : float = 5
     default_filename : str = "-Analog-data.csv"
     default_folder : str = "DataAcquisition"
     savefile_directory : str = os.path.join((os.path.dirname(os.path.realpath(__file__))),default_folder)
     n_channels : int = 512
     is_open : bool = True
+    infinite_acquisition : bool = False
 
     def print(self):
         print("Number of acquisitions:", self.n_acquisitions)
@@ -84,8 +85,15 @@ class AcquisitionSetupWindow(tk.Frame):
         self.time_acquisition_button.grid(row=1, column=2, sticky="nsew")
 
 
+        #define a radio button to toggle infinite acquisition 
+        #self.acquisition_settings.infinite_acquisition = tk.BooleanVar()
+        #self.acquisition_settings.infinite_acquisition.set(False)
+        #self.infinite_acquisition_button = tk.Radiobutton(self.acquisition_params_frame, text="Infinite Acquisition", variable=self.acquisition_settings.infinite_acquisition, value=1, command=self.toggle_infinite_acquisition)
+        #self.infinite_acquisition_button.grid(row=2, column=0, sticky="nsew")
 
-
+        #define a button to toggle infinite acquisition
+        self.infinite_acquisition_button = tk.Button(self.acquisition_params_frame, text="Infinite Acquisition", command=self.toggle_infinite_acquisition)
+        self.infinite_acquisition_button.grid(row=0, column=3, sticky="nsew", rowspan=3)
 
         #Frame for directory select, file name and savefile directory
         self.savefile_frame = tk.Frame(self.root,bg="white", width=400, height=100, bd=1, relief = 'raised')
@@ -192,7 +200,21 @@ class AcquisitionSetupWindow(tk.Frame):
     def print_params(self):
         self.acquisition_settings.print()
 
-    
+
+    def toggle_infinite_acquisition(self):
+        if self.acquisition_settings.infinite_acquisition == False:
+            self.acquisition_settings.infinite_acquisition = True
+            self.n_acquisitions_entry.config(state='disabled')
+            self.time_acquisition_entry.config(state='disabled')
+            print("infinite acquisition is true: " + str(self.acquisition_settings.infinite_acquisition))
+            self.acquisition_settings.t_acquisition = 999999999999999999999999999999
+            #self.acquisition_settings.infinite_acquisition.set(True)
+        else:
+            self.acquisition_settings.infinite_acquisition = False
+            self.n_acquisitions_entry.config(state='normal')
+            self.time_acquisition_entry.config(state='normal')
+            #self.acquisition_settings.infinite_acquisition.set(False)
+            print("infinite acquisition is false: " + str(self.acquisition_settings.infinite_acquisition))
 
     def run_app(self):
         self.root.destroy()

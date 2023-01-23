@@ -19,6 +19,7 @@ class Settings:
     threshold : int = 0
     default_filename : str = "AnalogData"
     current_n : int =0
+    infinite_acquisition : bool = False
 
     def update_with_inputs (self, parms : acq.AcquisitionSettings):
         self.n_acquisitions = parms.n_acquisitions
