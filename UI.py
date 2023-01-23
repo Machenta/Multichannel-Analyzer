@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from dataclasses import dataclass, field
 
 import AcquisitionSetupWindowv2 as acq
+import AnalysisWindow as ana
 
 class UI_Window(tk.Frame):
     def __init__(self, master=None, title="UI", geometry="900x900", matplot_fig=None):
@@ -30,31 +31,28 @@ class UI_Window(tk.Frame):
         self.standard_label_font = ("Helvetica", 11,"bold")
         self.standard_entry_size = (10,30)
         self.standard_entry_font = ("Helvetica", 12)
-        self.threshold = 0 
-        self.main_program_open = True
-        self.running_acquisition = False
-        self.clear_flag = False
-        self.plot_scale= "linear"
 
         #Acquisition Settings object to store all the acquisition settings in a single object
         self.acquisition_settings = acq.AcquisitionSettings()
-
+        
 
         #adding a menu bar
         
         self.menu_bar = tk.Menu(self.root)
         self.root.config(menu=self.menu_bar)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.acquisition_setup_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.analysis_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
-        self.menu_bar.add_cascade(label="Acquisition Setup", menu=self.edit_menu)
-        self.menu_bar.add_cascade(label="Analysis", menu=self.edit_menu)
+        self.menu_bar.add_cascade(label="Setup", menu=self.acquisition_setup_menu)
+        self.menu_bar.add_cascade(label="Analysis", menu=self.analysis_menu)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
         self.file_menu.add_command(label="Open", command = lambda: print("Open"))
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command = self.change_win_status)
-        self.edit_menu.add_command(label="Acquisition Setup", command= self.launch_setup_window)
+        self.acquisition_setup_menu.add_command(label="Acquisition Setup", command= self.launch_setup_window)
+        self.analysis_menu.add_command(label="Analysis", command = self.launch_analysis_window)
 
 
         #create default figure for the multichannel plot
@@ -144,7 +142,7 @@ class UI_Window(tk.Frame):
         self.threshold_label = tk.Label(self.config_frame, text="Threshold \n Value", anchor="center", width=10, height=2)
         self.threshold_label.grid(row=0, column=0, sticky="nsew")
 
-        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold)
+        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.acquisition_settings.threshold)
         self.threshold_entry.config(width=self.standard_entry_size[0], font=self.standard_entry_font)
         self.threshold_entry.grid(row=0, column=1, sticky="nsew")
         self.threshold_entry.bind("<Return>", self.get_threshold_bind)
@@ -185,12 +183,21 @@ class UI_Window(tk.Frame):
             time.sleep(0.05)
             self.acquisition_settings = self.setup_window.return_params()
             is_open = self.acquisition_settings.is_open
-            print("self.acquisition_settings: ", self.acquisition_settings)
+            #print("self.acquisition_settings: ", self.acquisition_settings)
 
         #print("Parameters: ", self.acquisition_settings)
 
     #A figure MUST be passed to this function as well a continuously updated data stream (data)
 
+    def launch_analysis_window(self, figure, data):
+        #creates a new top level window for the analysis
+        top_level = tk.Toplevel(self.root)
+        self.analysis_window = ana.AnalysisWindow(top_level, "Analysis", "450x150", figure, data)
+        is_open = True
+        while is_open:
+            self.analysis_window.update()
+            time.sleep(0.05)
+            is_open = self.analysis_window.is_open
     def run_real_time(self, metrics, interactive_metrics):
         #we must update the labels with the new updated metrics from the data stream
         for i in range(len(self.label_names)):
@@ -200,55 +207,57 @@ class UI_Window(tk.Frame):
                 self.interactive_metrics_values[i].config(text=str(int(interactive_metrics[i])))
                 self.interactive_metrics_values[i].update()
         self.root.update()
-        return self.threshold
+        return self.acquisition_settings.threshold
 
     def get_threshold(self):
         try:
-            self.threshold = float(self.threshold_entry.get())
-            return float(self.threshold)
+            self.acquisition_settings.threshold = float(self.threshold_entry.get())
+            print("threshold:" + str(self.acquisition_settings.threshold))
+            return float(self.acquisition_settings.threshold)
         except:
             print("Please enter a valid number")
+            print("threshold:" + str(self.acquisition_settings.threshold))
             return float(0)
 
     def get_threshold_bind(self,event=None):
         try:
-            self.threshold = float(self.threshold_entry.get())
+            self.acquisition_settings.threshold = float(self.acquisition_settings.threshold_entry.get())
         except:
             print("Please enter a valid number")  
-            self.threshold = float(0)    
+            self.acquisition_settings.threshold = float(0)    
 
     def change_text_submitted(self):
-        self.threshold_button(text="Threshold Submitted")
+        self.acquisition_settings.threshold_button(text="Threshold Submitted")
 
     def stop_acquisition(self):
-        self.running_acquisition = False 
-        print("Stopping Acquisition: " + str(self.running_acquisition))
-        print("window open: " + str(self.main_program_open))
+        self.acquisition_settings.running_acquisition = False 
+        print("Stopping Acquisition: " + str(self.acquisition_settings.running_acquisition))
+        print("window open: " + str(self.acquisition_settings.main_program_open))
 
     def run_acquisition(self):
-        self.running_acquisition = True
-        print("Running Acquisition: " + str(self.running_acquisition))
-        print("window open: " + str(self.main_program_open))
+        self.acquisition_settings.running_acquisition = True
+        print("Running Acquisition: " + str(self.acquisition_settings.running_acquisition))
+        print("window open: " + str(self.acquisition_settings.main_program_open))
 
     def clear_acquisition(self):
-        self.clear_flag = True
+        self.acquisition_settings.clear_flag = True
         print("Clearing Acquisition" )
 
     def toggle_scale(self):
-        if self.plot_scale =="linear":
-            self.plot_scale= "log"
+        if self.acquisition_settings.plot_scale =="linear":
+            self.acquisition_settings.plot_scale= "log"
             self.scale_button.config(text="Linear Scale")
         else:
-            self.plot_scale = "linear"
+            self.acquisition_settings.plot_scale = "linear"
             self.scale_button.config(text="Log Scale")
-        print("Scale: " + str(self.plot_scale))
+        print("Scale: " + str(self.acquisition_settings.plot_scale))
 
 
     def stop(self):
         self.root.destroy()
 
     def change_win_status(self):
-        self.main_program_open = False
+        self.acquisition_settings.main_program_open = False
 
     #define a function to combine multiple functions
     def combine_funcs(*funcs):

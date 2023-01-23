@@ -1,0 +1,6 @@
+UI.py: 
+    Enter keybind does not work with threshold
+
+main.py
+    Clear plot does not work when the acquisition is stopped    
+    Main window closes when acquistions are finished and STOP is pressed

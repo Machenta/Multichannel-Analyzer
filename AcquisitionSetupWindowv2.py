@@ -2,6 +2,7 @@ import tkinter as tk
 from dataclasses import dataclass, field
 import re
 import os
+import AcquisitionSettings as a_sets
 #def main():
 #    root = tk.Tk()
 #    window1= AcquisitionSetupWindow(root, "Acquisition Setup", "500x100")
@@ -23,6 +24,12 @@ class AcquisitionSettings:
     n_channels : int = 512
     is_open : bool = True
     infinite_acquisition : bool = False
+    threshold : int = 0
+    forbidden_characters : str = "[^a-zA-Z0-9_.-]"
+    main_program_open : bool  = True
+    running_acquisition = False
+    clear_flag = False
+    plot_scale= "linear"
 
     def print(self):
         print("Number of acquisitions:", self.n_acquisitions)
