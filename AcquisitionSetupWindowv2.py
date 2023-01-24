@@ -163,6 +163,10 @@ class AcquisitionSetupWindow(tk.Frame):
         #self.acquisition_settings.print()
         return True
 
+
+    def __getattr__(self, __name: str):
+        return getattr(self.acquisition_settings, __name)
+
     def return_params(self):
         return self.acquisition_settings
 
