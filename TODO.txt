@@ -1,6 +1,14 @@
 UI.py: 
-    Enter keybind does not work with threshold
+    
 
 main.py
     Clear plot does not work when the acquisition is stopped    
     Main window closes when acquistions are finished and STOP is pressed
+    Plot crashes when the scale toggle is pressed to log and there is no values
+    Threshold does not update when the acquisition is stopped
+
+Plot.py
+    onclick does not work because the global variables are not passed to the main file
+
+FileSelectionWindow.py 
+    Implement scrollbar for the file list

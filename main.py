@@ -19,9 +19,10 @@ matplotlib.use("TkAgg")
 import UI
 #import PlotInteraction as pi
 import Arduino
-import AcquisitionSetupWindowv2 as acq
+import AcquisitionSetupWindow as acq
+import Plot as SpectraPlot
 
-
+SLEEP_TIME = 0.01
 
 #create list with all parameters inside of the get_metrics function
 params_list= ["Total Counts", "Start Time", "Preset Time", "ADC Channels", "Number of Acquisitions", "Save Directory","Data Collection Rate (Hz)"]
@@ -116,6 +117,65 @@ def launch_setup_window():
     setup_window = acq.AcquisitionSetupWindow(root, "Acquisition Setup", "500x100")
     return setup_window.return_params()
 
+
+def update_settings_dict(settings_dict : dict, 
+                            sets: acq.AcquisitionSettings, 
+                            new_threshold : int , 
+                            end_of_iteration : float, 
+                            current_time : float):
+
+    settings_dict["acquisition_duration"] += end_of_iteration - current_time
+    settings_dict["running_acquisition"]   = sets.running_acquisition
+    settings_dict["n_acquisitions"]        = sets.n_acquisitions
+    settings_dict["t_acquisition"]         = sets.t_acquisition
+    settings_dict["clear_plot"]            = sets.clear_flag
+    settings_dict["plot_scale"]            = sets.plot_scale
+    settings_dict["threshold"]             = new_threshold
+    settings_dict.update()
+
+def update_plot (fig : plt.figure, 
+                    ax : plt.axes,
+                    x : list, 
+                    line1 : plt.Line2D,
+                    line2 : plt.Line2D,
+                    lines : list,
+                    shared_dict : dict, 
+                    settings : dict, 
+                    win : UI.UI_Window,
+                    cid
+                    ):
+
+    #update y_data taking into account the threshold and replace the erased values by zeros 
+    #while taking into account the clear plot flag 
+    if settings["clear_plot"] == True:
+        for key in range(settings["n_channels"]):
+            shared_dict[key] = 0
+        y_temp = [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
+        settings["clear_plot"] = False
+    else:
+        y_temp= [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
+    win.acquisition_settings.clear_flag = False
+    line1.set_ydata(y_temp)
+    line1.set_xdata(x)
+    line2.set_offsets(np.c_[x,y_temp])
+    ax.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
+    ax.set_yscale(settings["plot_scale"])   
+    if settings["threshold"] != 0: 
+        line = ax.axvline(x=settings["threshold"], color='blue', linestyle='--', linewidth=0.5)
+        lines.append(line)
+    for line in lines[:-1]:
+        line.remove()
+        lines.remove(line)    
+    if cid is not None:
+        fig.canvas.mpl_disconnect(cid)
+    cid = fig.canvas.mpl_connect('button_press_event', onclick)
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+    return y_temp
+
+
+
 #create new process to read data from arduino after creating a new device object 
 #this is necessary because the device object is not picklable
 def create_device_read_process( shared_dict : dict,
@@ -148,159 +208,84 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
         y_val1 = event.ydata
         fig.canvas.draw()
     return x_val1
-
-
+      
 def launch_main_window(settings : dict, shared_dict : dict):
 
+    #initialize plot 
+    spectrum= SpectraPlot.Plot(      x   = np.linspace(1, settings["n_channels"], settings["n_channels"]),
+                                     y   = np.zeros(settings["n_channels"]),   
+                                settings = settings)  
     
-    #first we create the figure to pass to the UI class
-    x=np.linspace(1, settings["n_channels"], settings["n_channels"])
-    y=np.linspace(1, settings["n_channels"], settings["n_channels"])
-    fig, ax1  = plt.subplots()
-    ax1.set_ylim(0, 100)
-    ax1.set_xlim(0, settings["n_channels"])
-    ax1.set_title("Data Acquisition")
-    ax1.set_xlabel("Channel")
-    ax1.set_ylabel("Counts")
-    ax1.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
-    
-    #draw a tentative plot 
-    
-    line1, = ax1.plot(x, y, 'r-')
-    line2 = ax1.scatter(x, y, c='b', marker='o', s=10, alpha=0.5)
-
-    #create the main window using the UI class
+    #create the main window and pass the plot to it
     root= tk.Tk()
-    win = UI.UI_Window(root, title = "Main window", geometry = "1000x700", matplot_fig = fig)
+    win = UI.UI_Window(root, title = "Main window", geometry = "1000x700", matplot_fig = spectrum.fig)
 
+    #parameters for loops
     t_start = time.time()
-    now=dt.now().strftime("%Y/%m/%d - %H:%M:%S")
+    start_time=dt.now().strftime("%Y/%m/%d - %H:%M:%S")
     cid = None
-    lines = []
-    #array to store the times at which the acquisition is started and stopped 
     current_time : float = 0
     end_of_iteration : float = 0
-    #main UI window loop that runs the acquisition is stopped and the command is given to terminate the program
-    while settings["stop_flag"] == False and win.acquisition_settings.main_program_open == True:
-        #loop that runs the acquisition if the command is given to start it
-        while win.acquisition_settings.running_acquisition == True:
-            current_time = time.time()
-            #updating the settings dictionary with the values entered by the user 
-            settings["running_acquisition"] = win.acquisition_settings.running_acquisition
-            settings["n_acquisitions"] = win.acquisition_settings.n_acquisitions
-            settings["t_acquisition"] = win.acquisition_settings.t_acquisition
-            settings["clear_plot"] = win.acquisition_settings.clear_flag
-            settings["plot_scale"] = win.acquisition_settings.plot_scale
-            #print("Stop Flag inside RUN UI at the START: " + str(settings["stop_flag"]))
-            #getting metrics from the data acquisition process
-            total_counts = sum(shared_dict.values())
-            start_time = now
-            preset_time = settings["t_acquisition"] 
-            n_channels = settings["n_channels"]
-            n_acquisitions = settings["n_acquisitions"]
-            current_acquisition = settings["current_n"]
-
-            #t_elapsed is the minimum of the elapsed time and the preset time
-            t_elapsed = min(round(time.time() - t_start,1), preset_time)
-            count_rate = round(float(total_counts)/(t_elapsed+0.0001),2)
-
-            metrics= [total_counts, start_time, preset_time, n_channels, n_acquisitions, current_acquisition, t_elapsed, count_rate]
-
-            #update y_data taking into account the threshold and replace the erased values by zeros
-            if settings["clear_plot"] == True:
-                for key in range(settings["n_channels"]):
-                    shared_dict[key] = 0
-                y_temp = [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
-                settings["clear_plot"] = False
-            else:
-                y_temp= [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
-            #line1.set_ydata(list(shared_dict.values()))
-            win.acquisition_settings.clear_flag = False
-            line1.set_ydata(y_temp)
-            line1.set_xdata(x)
-            line2.set_offsets(np.c_[x,y_temp])
-
-            ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
-            ax1.set_yscale(settings["plot_scale"])
-            # clear the fill
-            #fill.remove()
-            #ax1.fill_between(x, y_temp, color='red', alpha=0.5)
-
-            if settings["threshold"] != 0: 
-                line = ax1.axvline(x=settings["threshold"], color='blue', linestyle='--', linewidth=0.5)
-                lines.append(line)
-            for line in lines[:-1]:
-                line.remove()
-                lines.remove(line)    
-            if cid is not None:
-                fig.canvas.mpl_disconnect(cid)
-            cid = fig.canvas.mpl_connect('button_press_event', onclick)
-            fig.canvas.draw()
-            fig.canvas.flush_events()
-
-            #print("x: " + str(x_val1))
-            #print("y: " + str(y_val1))
-            interactive_metrics = [settings["threshold"], x_val1, y_temp[int(x_val1)]]
-            #print(settings_dict["current_n"])
-            new_threshold= win.run_real_time(metrics = metrics, interactive_metrics = interactive_metrics)
-            settings["threshold"] = new_threshold
-            time.sleep(0.01)
-
-            #print("Stop Flag inside RUN UI at the END: " + str(settings["stop_flag"]))
-            end_of_iteration = time.time()
-            settings["acquisition_duration"] += end_of_iteration - current_time
-            settings.update()
-            #print("acquisition duration inside plot loop: " + str(settings["acquisition_duration"]))
-            win.root.update() 
-        win.root.update() 
-        time.sleep(0.01) 
-
 
     while win.acquisition_settings.main_program_open == True:
-        settings["running_acquisition"] = win.acquisition_settings.running_acquisition
-        settings["n_acquisitions"] = win.acquisition_settings.n_acquisitions
-        settings["t_acquisition"] = win.acquisition_settings.t_acquisition
-        settings["clear_plot"] = win.acquisition_settings.clear_flag
-        settings["plot_scale"] = win.acquisition_settings.plot_scale
-        total_counts = sum(shared_dict.values())
-        #update y_data taking into account the threshold and replace the erased values by zeros
-        if settings["clear_plot"] == True:
-            for key in range(settings["n_channels"]):
-                shared_dict[key] = 0
-            y_temp = [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
-            settings["clear_plot"] = False
-        else:
-            y_temp= [shared_dict[i] if i >= settings["threshold"] else 0 for i in range(settings["n_channels"])]
-        #line1.set_ydata(list(shared_dict.values()))
-        win.acquisition_settings.clear_flag = False
-        line1.set_ydata(y_temp)
-        line1.set_xdata(x)
-        line2.set_offsets(np.c_[x,y_temp])
-        ax1.set_ylim(0, 1.1*max(shared_dict.values())+ 5)
-        ax1.set_yscale(settings["plot_scale"])
-        # clear the fill
-        #fill.remove()
-        #ax1.fill_between(x, y_temp, color='red', alpha=0.5)
-        if settings["threshold"] != 0: 
-            line = ax1.axvline(x=settings["threshold"], color='blue', linestyle='--', linewidth=0.5)
-            lines.append(line)
-        for line in lines[:-1]:
-            line.remove()
-            lines.remove(line)    
-        if cid is not None:
-            fig.canvas.mpl_disconnect(cid)
-        cid = fig.canvas.mpl_connect('button_press_event', onclick)
-        fig.canvas.draw()
-        fig.canvas.flush_events()
-        #print("x: " + str(x_val1))
-        #print("y: " + str(y_val1))
-        interactive_metrics = [settings["threshold"], x_val1, y_temp[int(x_val1)]]
-        #print(settings_dict["current_n"])
-        new_threshold= win.run_real_time(metrics = metrics, interactive_metrics = interactive_metrics)
-        settings["threshold"] = new_threshold
-        win.root.update() 
-          
 
+        while settings["stop_flag"] == False and win.acquisition_settings.main_program_open == True:
+            #loop that runs the acquisition if the command is given to start it
+            while win.acquisition_settings.running_acquisition == True and win.acquisition_settings.main_program_open == True:
+
+                current_time = time.time()
+                #getting metrics from the data acquisition process
+                total_counts = sum(shared_dict.values())
+                preset_time  = settings["t_acquisition"] 
+                #t_elapsed is the minimum of the elapsed time and the preset time
+                t_elapsed = min(round(time.time() - t_start,1), preset_time)
+
+                #update the plot 
+                y_temp = spectrum.update_plot(settings=settings, 
+                                                shared_dict=shared_dict,
+                                                clear_plot=win.acquisition_settings.clear_flag,
+                                                win=win,
+                                                cid = cid
+                                                )
+
+                metrics= [total_counts,    #total counts
+                            start_time, 
+                            settings["t_acquisition"],  #preset time
+                            settings["n_channels"],     #n_channels
+                            settings["n_acquisitions"], #n_acquisitions
+                            settings["current_n"],      #current acquisition
+                            min(round(time.time() - t_start,1), preset_time),  #elapsed time
+                            round(float(total_counts)/(t_elapsed+0.0001),2)
+                            ]
+
+
+                interactive_metrics = [settings["threshold"], 
+                                        x_val1,
+                                        y_temp[int(x_val1)]
+                                    ]
+
+                all_metrics = metrics + interactive_metrics
+                #updates the live metrics and returns a new threshold if the user has changed it
+                new_threshold= win.run_real_time(metrics = all_metrics)
+                end_of_iteration = time.time()
+                update_settings_dict(settings, 
+                                        win.acquisition_settings, 
+                                        new_threshold , 
+                                        end_of_iteration, 
+                                        current_time)
+
+                #win.root.update() 
+                time.sleep(SLEEP_TIME)
+
+            win.root.update() 
+            time.sleep(SLEEP_TIME)
+
+        win.root.update() 
+        time.sleep(SLEEP_TIME)
+
+    win.root.update() 
+    time.sleep(SLEEP_TIME)
+                
 
 if __name__ == "__main__":
 

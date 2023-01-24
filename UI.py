@@ -10,10 +10,25 @@ import Arduino
 import tkinter as tk
 import AcquisitionSetupWindow as acq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib
 from dataclasses import dataclass, field
+from typing import Union, Annotated
 
-import AcquisitionSetupWindowv2 as acq
+import AcquisitionSetupWindow as acq
 import AnalysisWindow as ana
+
+def onclick(event : matplotlib.backend_bases.MouseEvent):
+    global x_val1, y_val1
+
+    if event.inaxes:
+        fig = plt.gcf()
+        if hasattr(fig, 'line'):
+            fig.line.remove()
+        fig.line = plt.axvline(event.xdata, color='black')
+        x_val1 = event.xdata
+        y_val1 = event.ydata
+        fig.canvas.draw()
+    return x_val1
 
 class UI_Window(tk.Frame):
     def __init__(self, master=None, title="UI", geometry="900x900", matplot_fig=None):
@@ -80,7 +95,18 @@ class UI_Window(tk.Frame):
 
         #adding labels to the metrics frame 
         
-        self.label_names= ["Total Counts", "Start Time" , "Preset Time", "ADC Channels", "Number of Acquisitions", "Current Acquisition", "Time Elapsed" , "Count Rate (Hz)"]
+        self.label_names= ["Total Counts", 
+                            "Start Time" , 
+                            "Preset Time", 
+                            "ADC Channels", 
+                            "Number of Acquisitions", 
+                            "Current Acquisition", 
+                            "Time Elapsed" , 
+                            "Count Rate (Hz)",
+                            "Threshold Value", 
+                            "Channel", 
+                            "Selected Channel Count"
+                            ]
         self.name_table = [0 for label in self.label_names]
 
         for i in range(len(self.label_names)):
@@ -108,28 +134,28 @@ class UI_Window(tk.Frame):
         #self.frame_interactive_metrics.grid(sticky="nsew",column=1,row=1)
 
         #adding labels to the interactive metrics frame
-        self.interactive_metrics = ["Threshold Value", "Channel", "Selected Channel Count"] 
-        self.interactive_metrics_table = [0 for label in self.interactive_metrics]
-
-        for i in range(len(self.interactive_metrics)):
-            self.interactive_metrics_table[i] = tk.Label(self.frame_metrics, 
-                                                            text = self.interactive_metrics[i], 
-                                                            font = self.standard_label_font,
-                                                            anchor ="center", 
-                                                            width = self.label_width, 
-                                                            height = self.label_height).grid(row=i+8, column=0, sticky="nsew"
-                                                            )
-
-        #attribute values for the interactive metrics
-        self.interactive_metrics_values = [0 for label in self.interactive_metrics]
-        for i in range(len(self.interactive_metrics)):
-            self.interactive_metrics_values[i] = tk.Label(self.frame_metrics, 
-                                                            text=str(0), 
-                                                            font = self.standard_label_font,
-                                                            anchor="center", 
-                                                            width=self.standard_label_size[0], 
-                                                            height=self.standard_label_size[1])  
-            self.interactive_metrics_values[i].grid(row=i+8, column=1, sticky="nsew")      
+        #self.interactive_metrics = ["Threshold Value", "Channel", "Selected Channel Count"] 
+        #self.interactive_metrics_table = [0 for label in self.interactive_metrics]
+#
+        #for i in range(len(self.interactive_metrics)):
+        #    self.interactive_metrics_table[i] = tk.Label(self.frame_metrics, 
+        #                                                    text = self.interactive_metrics[i], 
+        #                                                    font = self.standard_label_font,
+        #                                                    anchor ="center", 
+        #                                                    width = self.label_width, 
+        #                                                    height = self.label_height).grid(row=i+8, column=0, sticky="nsew"
+        #                                                    )
+#
+        ##attribute values for the interactive metrics
+        #self.interactive_metrics_values = [0 for label in self.interactive_metrics]
+        #for i in range(len(self.interactive_metrics)):
+        #    self.interactive_metrics_values[i] = tk.Label(self.frame_metrics, 
+        #                                                    text=str(0), 
+        #                                                    font = self.standard_label_font,
+        #                                                    anchor="center", 
+        #                                                    width=self.standard_label_size[0], 
+        #                                                    height=self.standard_label_size[1])  
+        #    self.interactive_metrics_values[i].grid(row=i+8, column=1, sticky="nsew")      
 
 
 
@@ -142,14 +168,16 @@ class UI_Window(tk.Frame):
         self.threshold_label = tk.Label(self.config_frame, text="Threshold \n Value", anchor="center", width=10, height=2)
         self.threshold_label.grid(row=0, column=0, sticky="nsew")
 
-        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.acquisition_settings.threshold)
+        self.threshold_entry = tk.Entry(self.config_frame, textvariable=self.threshold_value)
         self.threshold_entry.config(width=self.standard_entry_size[0], font=self.standard_entry_font)
         self.threshold_entry.grid(row=0, column=1, sticky="nsew")
         self.threshold_entry.bind("<Return>", self.get_threshold_bind)
-    
+
         #create button to submit the threshold value and add it to the config frame
         self.threshold_button = tk.Button(self.config_frame, text="OK", command=self.get_threshold, width=self.standard_button_size[0], height=2)
         self.threshold_button.grid(row=0, column=2, sticky="nsew")
+
+       
 
         #create a button to start the acquisition and add it to the config frame
         self.stop_button = tk.Button(self.config_frame, text="Start", command=self.run_acquisition, width=self.standard_button_size[0], height=2)
@@ -168,6 +196,9 @@ class UI_Window(tk.Frame):
         self.scale_button.grid(row=0, column=6, sticky="nsew")
 
 
+    def __getattr__(self, __name: str) -> Union[int , float , str , bool , None]:
+        __annotations__ = {k: Union[v, str] for k, v in acq.__annotations__.items()}
+        return getattr(self.acquisition_settings, __name)
 
     def run(self):
         self.root.update()
@@ -198,14 +229,16 @@ class UI_Window(tk.Frame):
             self.analysis_window.update()
             time.sleep(0.05)
             is_open = self.analysis_window.is_open
-    def run_real_time(self, metrics, interactive_metrics):
+
+    def run_real_time(self, metrics):
         #we must update the labels with the new updated metrics from the data stream
+        #print("metrics: ", metrics)
         for i in range(len(self.label_names)):
             self.value_table[i].config(text=str(metrics[i]))
             self.value_table[i].update()
-            if i < len(self.interactive_metrics):
-                self.interactive_metrics_values[i].config(text=str(int(interactive_metrics[i])))
-                self.interactive_metrics_values[i].update()
+            #if i < len(self.interactive_metrics):
+            #    self.interactive_metrics_values[i].config(text=str(int(interactive_metrics[i])))
+            #    self.interactive_metrics_values[i].update()
         self.root.update()
         return self.acquisition_settings.threshold
 
@@ -221,7 +254,7 @@ class UI_Window(tk.Frame):
 
     def get_threshold_bind(self,event=None):
         try:
-            self.acquisition_settings.threshold = float(self.acquisition_settings.threshold_entry.get())
+            self.acquisition_settings.threshold = float(self.threshold_entry.get())
         except:
             print("Please enter a valid number")  
             self.acquisition_settings.threshold = float(0)    
