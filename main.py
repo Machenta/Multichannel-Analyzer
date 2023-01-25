@@ -27,6 +27,19 @@ SLEEP_TIME = 0.01
 #create list with all parameters inside of the get_metrics function
 params_list= ["Total Counts", "Start Time", "Preset Time", "ADC Channels", "Number of Acquisitions", "Save Directory","Data Collection Rate (Hz)"]
 
+def onclick(event : matplotlib.backend_bases.MouseEvent):
+    global x_val1, y_val1
+
+    if event.inaxes:
+        fig = plt.gcf()
+        if hasattr(fig, 'line'):
+            fig.line.remove()
+        fig.line = plt.axvline(event.xdata, color='black')
+        x_val1 = event.xdata
+        y_val1 = event.ydata
+        fig.canvas.draw()
+    return x_val1
+    
 def create_header(settings_dict : dict):
     h = ["ADC Channels: " +  str(settings_dict["n_channels"]),
     "Number of Acquisitions: " + str(settings_dict["n_acquisitions"]),

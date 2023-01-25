@@ -26,7 +26,6 @@ class Plot:
                     title : str  = "Data Acquisition", 
                     xlabel : str = "Channel", 
                     ylabel : str = "Counts", 
-                    settings : dict = None,
                     grid : bool = True):
         self.x = x
         self.y = y
