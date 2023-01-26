@@ -12,3 +12,6 @@ Plot.py
 
 FileSelectionWindow.py 
     Implement scrollbar for the file list
+
+AnalysisWindow.py
+    Implement slider for the file list

@@ -15,7 +15,7 @@ class AnalysisWindow(tk.Frame):
     def __init__(self, 
                     root, 
                     title : str = "Analysis Window",
-                    geometry : str = "800x800", 
+                    geometry : str = "1100x800", 
                     default_savefile_folder_name : str = "DataAcquisition",
                     default_savefile_dir : str = None,
                     ):
@@ -33,7 +33,7 @@ class AnalysisWindow(tk.Frame):
 
         #temporary plot to display for testing
         self.matplot_fig = plt.figure(figsize=(7,7), dpi=100)
-        self.matplot_fig.suptitle("You did not pass a figure and axis", fontsize=16)
+        self.matplot_fig.suptitle("Sample Plot", fontsize=16)
         y = [i**2 for i in range(101)]
         self.plot1 = self.matplot_fig.add_subplot(111)
         self.plot1.plot(y)
@@ -56,15 +56,97 @@ class AnalysisWindow(tk.Frame):
         self.canvas = FigureCanvasTkAgg( self.matplot_fig , master = self.plot_frame)
         self.canvas_widget = self.canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
+        ###############################################################################################
+
         #creating a frame to hold the widgets for file selection
-        self.file_frame = tk.Frame(self.root, bg="red")
+        self.file_frame = tk.Frame(self.root, bg="#2596be")
         self.file_frame.grid(row=0, column=1, sticky="nsew")
         
+        ######################################################
+
+        self.savefile_directory_label = tk.Label(self.file_frame, text="Savefile Directory: ")
+        self.savefile_directory_label.grid(row=0, column=0, sticky="nsew")
+        self.savefile_directory_label.config(wraplength=100)
+
+
+        #create a label to display the directory of the files
+        self.savefile_directory = tk.Label(self.file_frame, text=self.files.default_savefile_dir)
+        self.savefile_directory.grid(row=0, column=1, columnspan=2, sticky="nsew")
+        self.savefile_directory.config(wraplength=200)
+
+        ######################################################
+
+        self.total_files_count_label = tk.Label(self.file_frame, text="Number of Files: ")
+        self.total_files_count_label.grid(row=1, column=0, sticky="nsew")
+        self.total_files_count_label.config(wraplength=100)
+
+        #create a label to display the number of files in the directory
+        self.total_files_count = tk.Label(self.file_frame, text=self.files.file_count)
+        self.total_files_count.grid(row=1, column=1, columnspan=2, sticky="nsew")
+
+
+        ######################################################
+
+        self.common_file_name_label = tk.Label(self.file_frame, text="Common File Name: ")
+        self.common_file_name_label.grid(row=2, column=0, sticky="nsew")
+        self.common_file_name_label.config(wraplength=100)
+
+        #create a label to display the common file name
+        self.common_file_name = tk.Label(self.file_frame, text=self.files.regular_expression)
+        self.common_file_name.grid(row=2, column=1, columnspan=2, sticky="nsew")
+
+        ######################################################
+
+        self.file_list_label = tk.Label(self.file_frame, text="File List: ")
+        self.file_list_label.grid(row=3, column=0, sticky="nsew")
+        self.file_list_label.config(wraplength=100)
+
+
+
+        #create a label to display the file list
+        self.file_list = tk.Label(self.file_frame, text=self.files.files_list)
+        self.file_list.grid(row=3, column=1, columnspan=2, sticky="nsew")
+
+        ######################################################
+
+        #create the file list box
+        self.file_list_box = tk.Listbox(self.file_frame, selectmode=tk.MULTIPLE)
+        self.file_list_box.grid(row=4, column=0, columnspan=2, sticky="nsew")
+        self.file_list_box.config(width=51, height=20)
+
+        #populate the file list box
+        for file in self.files.files_list:
+            self.file_list_box.insert(tk.END, file)
+
+        ######################################################
+
+
+        ###############################################################################################
+
+        #create a frame to hold the scroll bar to navigate the plots for the multiples files
+
+        self.scroll_frame = tk.Frame(self.root, bg="#e3b3ab")
+        self.scroll_frame.grid(row=1, column=0, sticky="nsew")
+
+        ######################################################
+
+        #create a label to display the current file number
+        self.current_file_label = tk.Label(self.scroll_frame, text="Current File: ")
+        self.current_file_label.grid(row=0, column=0, sticky="nsew")
+        self.current_file_label.config(wraplength=100)
+
+        #create the slider to navigate the plots for the multiples files
+        self.current_file_slider = tk.Scale(self.scroll_frame, from_=0, to=6, orient=tk.HORIZONTAL, length=620)
+        self.current_file_slider.grid(row=0, column=1, sticky="nsew")
+        
+        #increase the size of the scroll bar
+
+
         ###############################################################################################
 
         #create a frame to hold the plot commands for peak finding
-        self.command_frame = tk.Frame(self.root, bg = "blue")
-        self.command_frame.grid(row=1, column=0,sticky="nsew")
+        self.command_frame = tk.Frame(self.root, bg = "#eab676")
+        self.command_frame.grid(row=2, column=0,sticky="nsew")
 
         ######################################################
 
@@ -120,6 +202,33 @@ class AnalysisWindow(tk.Frame):
         self.peak_count_text2.config(state="disabled")
 
         ######################################################
+
+        #create a label for lower plot bound
+        self.lower_plot_bound_label = tk.Label(self.command_frame, text="Lower Plot Bound: ")
+        self.lower_plot_bound_label.grid(row=1, column=3)
+
+        #create an entry box for lower plot bound
+
+        self.lower_plot_bound_entry = tk.Entry(self.command_frame, width=10)
+        self.lower_plot_bound_entry.grid(row=1, column=4)
+
+        ######################################################
+
+        #create a label for upper plot bound
+        self.upper_plot_bound_label = tk.Label(self.command_frame, text="Upper Plot Bound: ")
+        self.upper_plot_bound_label.grid(row=2, column=3)
+
+
+        #create an entry box for upper plot bound
+        self.upper_plot_bound_entry = tk.Entry(self.command_frame, width=10)
+        self.upper_plot_bound_entry.grid(row=2, column=4)
+
+        ######################################################
+
+
+        ###############################################################################################
+
+
 
 
     def select_files(self):
