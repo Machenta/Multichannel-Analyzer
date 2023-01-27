@@ -42,6 +42,7 @@ class FileSelectionWindow(tk.Frame):
         #label with current savefile directory
         self.savefile_directory = tk.Label(self.file_frame, text=self.files.current_dir)
         self.savefile_directory.grid(row=1, column=0, sticky="nsew")
+        self.savefile_directory.config(wraplength=300)
 
         #create a filedialog button to select savefile directory
         self.savefile_directory_button = tk.Button(self.file_frame, text="Select Directory", command=self.open_file_dialog)
@@ -57,7 +58,7 @@ class FileSelectionWindow(tk.Frame):
 
         #create a listbox to display the files in the savefile directory
         self.file_list = tk.Listbox(self.file_frame)
-        self.file_list.config(width=70, height=20)
+        self.file_list.config(width=50, height=20)
         self.file_list.grid(row=2, column=0, sticky="nsew", columnspan=10)
         
         #create a label for the common file name 
