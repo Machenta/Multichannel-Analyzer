@@ -15,7 +15,7 @@ class AnalysisWindow(tk.Frame):
     def __init__(self, 
                     root, 
                     title : str = "Analysis Window",
-                    geometry : str = "1100x800", 
+                    geometry : str = "1100x900", 
                     default_savefile_folder_name : str = "DataAcquisition",
                     default_savefile_dir : str = None,
                     ):
@@ -26,6 +26,8 @@ class AnalysisWindow(tk.Frame):
         self.matplot_fig = None 
         self.files = FileSelectionWindow.file_data( default_savefile_dir = default_savefile_dir, 
                                                     default_savefile_folder_name = default_savefile_folder_name)
+        self.setup_window_open = False
+        self.plots = None
 
         if default_savefile_dir == None:
             self.files.default_savefile_dir = os.path.join(os.getcwd(), self.files.default_savefile_folder_name)
@@ -33,10 +35,12 @@ class AnalysisWindow(tk.Frame):
 
         #temporary plot to display for testing
         self.matplot_fig = plt.figure(figsize=(7,7), dpi=100)
-        self.matplot_fig.suptitle("Sample Plot", fontsize=16)
+        self.matplot_fig.suptitle("Spectrum", fontsize=16)
         y = [i**2 for i in range(101)]
         self.plot1 = self.matplot_fig.add_subplot(111)
-        self.plot1.plot(y)
+        #self.plot1.plot(y)
+        self.plot1.set_xlabel("Channel")
+        self.plot1.set_ylabel("Counts")
 
 
         #create a menu bar
@@ -234,28 +238,69 @@ class AnalysisWindow(tk.Frame):
     def select_files(self):
         #creates a new top level window to select files to analyze
         self.file_window = tk.Toplevel(self.root)
-        self.file_window = FileSelectionWindow.FileSelectionWindow(self.file_window,
-                                                                    title="File Selection", 
-                                                                    geometry="800x600")
-        #copy for convienence
-        self.files = self.file_window.files    
+        self.file_window = FileSelectionWindow.FileSelectionWindow(self.file_window)
+        self.file_window.wait_window()
+        #copy for convinience
+        self.files = self.file_window.files
+        #print("files inside the main window: ", self.files)
+
+        #update all parameters that depend on the files ingested
+        self.update_file_dependent_parameters()
+
+        #plot the first file in the list
+        self.plot_graph(index = 0)
+
+        self.generate_all_plots()
+
+    
+
 
     def plot_graph(self, index : int = 0):
         #plots the graph for the selected file
         #create the plot object
         x,y = self.get_x_y(index)
-        self.plot = AnalysisPlot(self.files[index].x, self.files[index].y)
-        self.root.mainloop()
+        print("x: ", x)
+        print("y: ", y)
 
+        self.plot = AnalysisPlot.AnalysisPlot(x, y)
+
+        self.plot1.clear()
+        #self.plot1 = self.plot.ax
+        self.plot1.plot(x, y)
+        self.plot1.set_title(self.files.files_list[index])
+
+        #self.plot1.set_xlim(self.plot.lower_plot_bound, self.plot.upper_plot_bound)
+        self.canvas.draw()
+        self.canvas.flush_events()
+
+    def generate_all_plots(self):
+        #creates a list of all the plots
+        self.plots = [None] * self.files.file_count
+
+        #plots all the files in the list
+        print("range(self.files.file_count)", str(range(self.files.file_count)))
+        for index in range(self.files.file_count):
+            print("index: ", index)
+            x,y = self.get_x_y(index)
+            self.plots[index] = AnalysisPlot.AnalysisPlot(x, y)   
+
+    def update_file_dependent_parameters(self):
+        self.savefile_directory.config(text= self.files.default_savefile_dir)
+        self.total_files_count.config(text= self.files.file_count)
+        self.common_file_name.config(text= self.files.regular_expression)
+        for file in self.files.files_list:
+            self.file_list_box.insert(tk.END, file)
         
-        
+        #update scale bar
+        self.current_file_slider.config(from_ = 0, to = self.files.file_count - 1)
+
     def get_x_y(self, index : int = 0):
         #returns the x and y data for the selected file
         x= []
         y= []
         for element in self.files.all_headless[index]:
-            x.append(element.split(",")[0])
-            y.append(element.split(",")[1])
+            x.append(int(element.split(",")[0]))
+            y.append(int(element.split(",")[1]))
         return x,y
     
 

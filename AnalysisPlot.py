@@ -19,7 +19,7 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
         fig.canvas.draw()
     return x_val1
 
-class Plot:
+class AnalysisPlot:
     def __init__(self, 
                     x, 
                     y, 
@@ -86,6 +86,9 @@ class Plot:
 
         return self.y_temp
 
+
+    def set_title(self, title : str):
+        self.ax.set_title(title)
 
 if __name__ == "__main__":
     a,=np.linspace(1, 10, 12).shape

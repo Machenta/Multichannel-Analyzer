@@ -24,7 +24,7 @@ class FileSelectionWindow(tk.Frame):
     def __init__(self, 
                     root, 
                     title : str = "File Selection",
-                    geometry : str = "800x600"):
+                    geometry : str = "450x500"):
         super().__init__(root)
         self.root = root
         self.root.title(title)
@@ -34,6 +34,7 @@ class FileSelectionWindow(tk.Frame):
         #creating a frame to hold the file selection widgets
         self.file_frame = tk.Frame(self.root)
         self.file_frame.grid(row=0, column=0, sticky="nsew")
+        self.file_frame.place(relx=0.5, rely=0.5, anchor="center")
 
         #add label for savefile directory
         self.savefile_directory_label = tk.Label(self.file_frame, text="Current Savefile Directory:")
@@ -91,7 +92,7 @@ class FileSelectionWindow(tk.Frame):
     def open_file_dialog(self):
         self.files.path = tkinter.filedialog.askdirectory()
         self.savefile_directory.config(text=self.files.path)
-        print(self.files.path)
+        #print(self.files.path)
         os.chdir(str(self.files.path))
         self.get_file_list()
 
@@ -100,7 +101,7 @@ class FileSelectionWindow(tk.Frame):
         self.file_list.delete(0, tk.END)
         #number of files in the directory
         self.files.file_count = len(self.files.files_list)
-        print("Number of files in directory: ", str(self.files.file_count))
+        #print("Number of files in directory: ", str(self.files.file_count))
         self.total_files_count.config(text=str(self.files.file_count))
         self.files.file_count = 0
         for file in self.files.files_list:
@@ -109,7 +110,7 @@ class FileSelectionWindow(tk.Frame):
                 self.files.file_count += 1
                 print("Number of files in directory: ", self.files.file_count)
         self.total_files_count.config(text=self.files.file_count)  
-        print("files: ", str(self.files))
+        #print("files: ", str(self.files))
 
      
 
@@ -123,7 +124,7 @@ class FileSelectionWindow(tk.Frame):
             self.get_file_list()
 
     def load_files(self):  
-        print("file list: ", str(self.file_list))   
+        #print("file list: ", str(self.file_list))   
         #print file list
         file_index = 0
         #create a dictionary to hold all the files
@@ -131,21 +132,21 @@ class FileSelectionWindow(tk.Frame):
         #create the necessary number of keys in the dictionary
         for index in range(self.files.file_count):
             self.files.all_files[index] = []
-        print("all files: ", str(self.files.all_files))
+        #print("all files: ", str(self.files.all_files))
         #load the files into memory
         for file in self.files.files_list:
             self.load_file(file,file_index)
             file_index += 1
 
-        self.files.all_files_headless = {}
+        self.files.all_headless = {}
         for index in range(self.files.file_count):
-            self.files.all_files_headless[index] = []
+            self.files.all_headless[index] = []
         
         headless_index = 0
         for file in self.files.all_files:
-            self.files.all_files_headless[headless_index]=self.remove_header(self.files.all_files[file])
+            self.files.all_headless[headless_index]=self.remove_header(self.files.all_files[file])
             headless_index += 1
-        print("all files headless: ", str(self.files.all_files_headless))
+        #print("all files headless: ", str(self.files.all_headless))
 
         self.all_headers = {}
         for index in range(self.files.file_count):
@@ -155,7 +156,7 @@ class FileSelectionWindow(tk.Frame):
         for file in self.files.all_files:
             self.all_headers[header_index]=self.files.all_files[file][0]
             header_index += 1
-        print("all headers: ", str(self.all_headers))
+        #print("all headers: ", str(self.all_headers))
 
     def load_file(self,file,index):
         #load the file into memory as a key in the all_files dictionary
@@ -163,7 +164,7 @@ class FileSelectionWindow(tk.Frame):
             for line in f:
                 line = self.newline_remover(line)
                 self.files.all_files[index].append(line)  
-        print("all files: ", str(self.files.all_files)) 
+        #print("all files: ", str(self.files.all_files)) 
        
 
     def newline_remover(self, line):
