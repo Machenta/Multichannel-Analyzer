@@ -8,8 +8,11 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import matplotlib
 import AnalysisPlot
+import time
+from functools import partial
 
 matplotlib.use("TkAgg") #use the TkAgg backend for matplotlib
+
 
 class AnalysisWindow(tk.Frame):
     def __init__(self, 
@@ -140,7 +143,12 @@ class AnalysisWindow(tk.Frame):
         self.current_file_label.config(wraplength=100)
 
         #create the slider to navigate the plots for the multiples files
-        self.current_file_slider = tk.Scale(self.scroll_frame, from_=0, to=6, orient=tk.HORIZONTAL, length=620)
+        self.current_file_slider = tk.Scale(self.scroll_frame, 
+                                            from_=0, 
+                                            to=6, 
+                                            orient=tk.HORIZONTAL, 
+                                            length=620 , 
+                                            command= self.update_plot)
         self.current_file_slider.grid(row=0, column=1, sticky="nsew")
         
         #increase the size of the scroll bar
@@ -238,6 +246,7 @@ class AnalysisWindow(tk.Frame):
     def select_files(self):
         #creates a new top level window to select files to analyze
         self.file_window = tk.Toplevel(self.root)
+        self.file_window.wm_attributes("-topmost", True)
         self.file_window = FileSelectionWindow.FileSelectionWindow(self.file_window)
         self.file_window.wait_window()
         #copy for convinience
@@ -266,7 +275,9 @@ class AnalysisWindow(tk.Frame):
 
         self.plot1.clear()
         #self.plot1 = self.plot.ax
-        self.plot1.plot(x, y)
+        #self.plot1.plot(x, y)
+        self.plot1.set_ydata(y)
+        self.plot1.set_xdata(x)
         self.plot1.set_title(self.files.files_list[index])
 
         #self.plot1.set_xlim(self.plot.lower_plot_bound, self.plot.upper_plot_bound)
@@ -302,7 +313,12 @@ class AnalysisWindow(tk.Frame):
             x.append(int(element.split(",")[0]))
             y.append(int(element.split(",")[1]))
         return x,y
-    
+
+    def update_plot(self, event = None):
+        #updates the plot based on the current file
+        print("self.current_file_slider.get()" , self.current_file_slider.get())
+        self.plot_graph(index = self.current_file_slider.get())
+
 
 
 if __name__ == "__main__":
