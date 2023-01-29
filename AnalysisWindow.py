@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from dataclasses import dataclass, field
 import re
 import os
@@ -10,9 +11,72 @@ import matplotlib
 import AnalysisPlot
 import time
 from functools import partial
+import copy
 
 matplotlib.use("TkAgg") #use the TkAgg backend for matplotlib
 
+@dataclass
+class PlotParams:
+    peak1_lower_bound : int = 0
+    peak1_upper_bound : int = 0
+    peak2_lower_bound : int = 0
+    peak2_upper_bound : int = 0
+
+    peak1_counts : int = 0
+    peak2_counts : int = 0
+
+    plot_lower_bound : int = None
+    plot_upper_bound : int = None
+
+    threshold : int = None
+    scale : str = "linear"
+    filled : bool = False
+
+    lines = []
+
+    def has_changed(self, other : "PlotParams"):
+        if self.peak1_lower_bound != other.peak1_lower_bound:
+            return True
+        if self.peak1_upper_bound != other.peak1_upper_bound:
+            return True
+        if self.peak2_lower_bound != other.peak2_lower_bound:
+            return True
+        if self.peak2_upper_bound != other.peak2_upper_bound:
+            return True
+        if self.plot_lower_bound != other.plot_lower_bound:
+            return True
+        if self.plot_upper_bound != other.plot_upper_bound:
+            return True
+        if self.threshold != other.threshold:
+            return True
+        if self.scale != other.scale:
+            return True
+        return False
+
+    def print(self, n : str ):
+        #print the name of the object
+        print("PlotParams: " , n)
+        print("peak1_lower_bound: ",self.peak1_lower_bound)
+        print("peak1_upper_bound: ",self.peak1_upper_bound)
+        print("peak2_lower_bound: ",self.peak2_lower_bound)
+        print("peak2_upper_bound: ",self.peak2_upper_bound)
+        print("plot_lower_bound: ",self.plot_lower_bound)
+        print("plot_upper_bound: ",self.plot_upper_bound)
+        print("threshold: ",self.threshold)
+        print("scale: ",self.scale)
+
+def onclick(event : matplotlib.backend_bases.MouseEvent):
+        global x_val1, y_val1
+
+        if event.inaxes:
+            fig = plt.gcf()
+            if hasattr(fig, 'line'):
+                fig.line.remove()
+            fig.line = plt.axvline(event.xdata, color='red')
+            x_val1 = event.xdata
+            y_val1 = event.ydata
+            fig.canvas.draw()
+        return x_val1
 
 class AnalysisWindow(tk.Frame):
     def __init__(self, 
@@ -31,6 +95,12 @@ class AnalysisWindow(tk.Frame):
                                                     default_savefile_folder_name = default_savefile_folder_name)
         self.setup_window_open = False
         self.plots = None
+        self.lines = []
+        self.first_plot = False
+        self.discaarded_files = []
+
+        self.plot_params = PlotParams()
+        self.current_plot_params = PlotParams()
 
         if default_savefile_dir == None:
             self.files.default_savefile_dir = os.path.join(os.getcwd(), self.files.default_savefile_folder_name)
@@ -44,6 +114,8 @@ class AnalysisWindow(tk.Frame):
         #self.plot1.plot(y)
         self.plot1.set_xlabel("Channel")
         self.plot1.set_ylabel("Counts")
+        
+        self.plot1.grid(True)
 
 
         #create a menu bar
@@ -57,17 +129,18 @@ class AnalysisWindow(tk.Frame):
 
         #creating a frame to hold the widgets
         self.plot_frame = tk.Frame(self.root)
-        self.plot_frame.grid(row=0, column=0)
+        self.plot_frame.grid(row=0, column=0, rowspan=3)
 
         #creating a canvas to hold the plot
         self.canvas = FigureCanvasTkAgg( self.matplot_fig , master = self.plot_frame)
-        self.canvas_widget = self.canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+        self.canvas_widget = self.canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew" , rowspan=2)
 
         ###############################################################################################
 
         #creating a frame to hold the widgets for file selection
         self.file_frame = tk.Frame(self.root, bg="#2596be")
         self.file_frame.grid(row=0, column=1, sticky="nsew")
+        self.file_frame.config(width=200, height=50)
         
         ######################################################
 
@@ -119,7 +192,7 @@ class AnalysisWindow(tk.Frame):
         #create the file list box
         self.file_list_box = tk.Listbox(self.file_frame, selectmode=tk.MULTIPLE)
         self.file_list_box.grid(row=4, column=0, columnspan=2, sticky="nsew")
-        self.file_list_box.config(width=51, height=20)
+        self.file_list_box.config(width=51, height=10)
 
         #populate the file list box
         for file in self.files.files_list:
@@ -131,9 +204,10 @@ class AnalysisWindow(tk.Frame):
         ###############################################################################################
 
         #create a frame to hold the scroll bar to navigate the plots for the multiples files
-
+        
         self.scroll_frame = tk.Frame(self.root, bg="#e3b3ab")
-        self.scroll_frame.grid(row=1, column=0, sticky="nsew")
+        self.scroll_frame.grid(row=3, column=0, sticky="nsew")
+        self.scroll_frame.configure(width=200, height=100)
 
         ######################################################
 
@@ -148,7 +222,7 @@ class AnalysisWindow(tk.Frame):
                                             to=6, 
                                             orient=tk.HORIZONTAL, 
                                             length=620 , 
-                                            command= self.update_plot)
+                                            command= self.update_plot_slider)
         self.current_file_slider.grid(row=0, column=1, sticky="nsew")
         
         #increase the size of the scroll bar
@@ -158,7 +232,7 @@ class AnalysisWindow(tk.Frame):
 
         #create a frame to hold the plot commands for peak finding
         self.command_frame = tk.Frame(self.root, bg = "#eab676")
-        self.command_frame.grid(row=2, column=0,sticky="nsew")
+        self.command_frame.grid(row=4, column=0,sticky="nsew")
 
         ######################################################
 
@@ -186,32 +260,38 @@ class AnalysisWindow(tk.Frame):
         ######################################################
 
         #create a text box to display the lower bound for the peak finding for peak 1 
-        self.left_peak_text1 = tk.Text(self.command_frame, height=1, width=10)
-        self.left_peak_text1.grid(row=1, column=1)
-
-        #create a text box to display the lower bound for the peak finding for peak 2
-        self.right_peak_text2 = tk.Text(self.command_frame, height=1, width=10)
-        self.right_peak_text2.grid(row=1, column=2)
+        self.peak1_lower_bound = tk.Entry(self.command_frame, width=10)
+        self.peak1_lower_bound.grid(row=1, column=1)
+        self.peak1_lower_bound.bind("<Return>", self.get_peak1_lower_bound)
 
         #create a text box to display the upper bound for the peak finding for peak 1
-        self.right_peak_text1 = tk.Text(self.command_frame, height=1, width=10)
-        self.right_peak_text1.grid(row=2, column=1)
+        self.peak1_upper_bound_entry = tk.Entry(self.command_frame, width=10)
+        self.peak1_upper_bound_entry.grid(row=2, column=1)
+        self.peak1_upper_bound_entry.bind("<Return>", self.get_peak1_upper_bound)
+
+        #create a text box to display the lower bound for the peak finding for peak 2
+        self.peak2_lower_bound = tk.Entry(self.command_frame, width=10)
+        self.peak2_lower_bound.grid(row=1, column=2)
+        self.peak2_lower_bound.bind("<Return>",  self.get_peak2_lower_bound)
 
         #create a text box to display the upper bound for the peak finding for peak 2
-        self.right_peak_text2 = tk.Text(self.command_frame, height=1, width=10)
-        self.right_peak_text2.grid(row=2, column=2)
+        self.peak2_upper_bound = tk.Entry(self.command_frame, width=10)
+        self.peak2_upper_bound.grid(row=2, column=2)
+        self.peak2_upper_bound.bind("<Return>", self.get_peak2_upper_bound)
+
+        
 
         ######################################################
 
         #create a text box to display the counts for peak 1
-        self.peak_count_text1 = tk.Text(self.command_frame, height=1, width=10)
+        self.peak_count_text1 = tk.Label(self.command_frame, height=1, width=10)
         self.peak_count_text1.grid(row=3, column=1)
-        self.peak_count_text1.config(state="disabled")
+        #self.peak_count_text1.config(state="disabled")
 
         #create a text box to display the counts for peak 2
-        self.peak_count_text2 = tk.Text(self.command_frame, height=1, width=10)
+        self.peak_count_text2 = tk.Label(self.command_frame, height=1, width=10)
         self.peak_count_text2.grid(row=3, column=2)
-        self.peak_count_text2.config(state="disabled")
+        #self.peak_count_text2.config(state="disabled")
 
         ######################################################
 
@@ -223,6 +303,7 @@ class AnalysisWindow(tk.Frame):
 
         self.lower_plot_bound_entry = tk.Entry(self.command_frame, width=10)
         self.lower_plot_bound_entry.grid(row=1, column=4)
+        self.lower_plot_bound_entry.bind("<Return>", self.get_plot_lower_bound)
 
         ######################################################
 
@@ -234,12 +315,43 @@ class AnalysisWindow(tk.Frame):
         #create an entry box for upper plot bound
         self.upper_plot_bound_entry = tk.Entry(self.command_frame, width=10)
         self.upper_plot_bound_entry.grid(row=2, column=4)
+        self.upper_plot_bound_entry.bind("<Return>", self.get_plot_upper_bound)
 
         ######################################################
+        #button to get all the parameters
+        self.get_parameters_button = tk.Button(self.command_frame, 
+                                                text="Get Parameters", 
+                                                command= self.get_all_params)
+        self.get_parameters_button.grid(row=4, column=0)
+        #self.get_parameters_button.bind("<Return>", self.get_all_params)
 
+        ######################################################
+        #button to switch between linear and log scale
+        self.scale_button = tk.Button(self.command_frame, 
+                                        text="Log Scale", 
+                                        command= self.switch_scale)
+        self.scale_button.grid(row=4, column=1)
 
         ###############################################################################################
 
+        #create a new frame to hold the analysis buttons and output
+        self.analysis_frame = tk.Frame(self.root, bg="yellow")
+        self.analysis_frame.grid(row=1, column=1, sticky="nsew", rowspan=2)
+
+        #create a label for the analysis frame
+        self.analysis_label = tk.Label(self.analysis_frame, text="Analysis", bg="yellow")
+        self.analysis_label.grid(row=0, column=0, sticky="nsew")
+        self.analysis_label.config(font=("Arial", 16), anchor="center")
+
+        #create a label for the discarded files at the start of the acquisition
+        self.discarded_files_label = tk.Label(self.analysis_frame, text="Discarded Files: ")
+        self.discarded_files_label.grid(row=1, column=0, sticky="nsew")
+
+        #create an entry box for the discarded files at the start of the acquisition
+        self.discarded_files_entry = tk.Entry(self.analysis_frame, width=10)
+        self.discarded_files_entry.grid(row=1, column=1, sticky="nsew")
+        self.discarded_files_entry.bind("<Return>", self.get_discarded_files)
+        
 
 
 
@@ -258,10 +370,88 @@ class AnalysisWindow(tk.Frame):
 
         #plot the first file in the list
         self.plot_graph(index = 0)
+        self.first_plot = True
 
         self.generate_all_plots()
 
-    
+    def get_all_params(self, event):
+        #get all parameters from the text boxes for the peak finding
+
+        #plot bounds
+
+        self.plot_params.plot_lower_bound = self.get_plot_lower_bound()
+        self.plot_params.plot_upper_bound = self.get_plot_upper_bound()
+        
+        #peak 1 bounds
+        self.plot_params.peak1_lower_bound = self.get_peak1_lower_bound()
+        self.plot_params.peak1_upper_bound = self.get_peak1_upper_bound()
+
+        #peak 2 bounds
+        self.plot_params.peak2_lower_bound = self.get_peak2_lower_bound()
+        self.plot_params.peak2_upper_bound = self.get_peak2_upper_bound()
+
+
+        print("peak 1 lower bound: ", self.plot_params.peak1_lower_bound)
+        print("peak 1 upper bound: ", self.plot_params.peak1_upper_bound)
+        print("peak 2 lower bound: ", self.plot_params.peak2_lower_bound)
+        print("peak 2 upper bound: ", self.plot_params.peak2_upper_bound)
+
+        print("lower plot bound: ", self.plot_params.plot_lower_bound)
+        print("upper plot bound: ", self.plot_params.plot_upper_bound)
+
+
+    #def process_input(self):
+
+
+
+    def get_peak1_lower_bound(self, event = None):
+        try: 
+            val= self.peak1_lower_bound.get()
+        except ValueError:
+            val = 0
+
+        self.plot_params.peak1_lower_bound = float(val)
+        
+
+    def get_peak1_upper_bound(self, event = None ):
+        #returns the upper bound for peak 1
+        try:
+            val = self.peak1_upper_bound_entry.get()
+        except ValueError:
+            val = 0
+        self.plot_params.peak1_upper_bound = float(val)
+
+    def get_peak2_lower_bound(self, event = None):
+        #returns the lower bound for peak 2
+        val = self.peak2_lower_bound.get()
+        try:
+            self.plot_params.peak2_lower_bound = float(val)
+        except ValueError:
+            self.plot_params.peak2_lower_bound = 0   
+
+    def get_peak2_upper_bound(self, event=None):
+        #returns the upper bound for peak 2
+        val = self.peak2_upper_bound.get()
+        try:
+            self.plot_params.peak2_upper_bound = float(val)
+        except ValueError:
+            self.plot_params.peak2_upper_bound = 0
+                
+    def get_plot_lower_bound(self, event=None):
+        #returns the lower bound for the plot
+        val = self.lower_plot_bound_entry.get()
+        try:
+            self.plot_params.plot_lower_bound = float(val)
+        except ValueError:
+            self.plot_params.plot_lower_bound = 0
+
+    def get_plot_upper_bound(self, event=None):
+        #returns the upper bound for the plot
+        val = self.upper_plot_bound_entry.get()
+        try:
+            self.plot_params.plot_upper_bound = float(val)
+        except ValueError:
+            self.plot_params.plot_upper_bound = 0      
 
 
     def plot_graph(self, index : int = 0):
@@ -271,15 +461,10 @@ class AnalysisWindow(tk.Frame):
         print("x: ", x)
         print("y: ", y)
 
-        self.plot = AnalysisPlot.AnalysisPlot(x, y)
-
         self.plot1.clear()
-        #self.plot1 = self.plot.ax
-        #self.plot1.plot(x, y)
-        self.plot1.set_ydata(y)
-        self.plot1.set_xdata(x)
+        self.plot1.plot(x, y, 'b-')
         self.plot1.set_title(self.files.files_list[index])
-
+    
         #self.plot1.set_xlim(self.plot.lower_plot_bound, self.plot.upper_plot_bound)
         self.canvas.draw()
         self.canvas.flush_events()
@@ -314,17 +499,103 @@ class AnalysisWindow(tk.Frame):
             y.append(int(element.split(",")[1]))
         return x,y
 
-    def update_plot(self, event = None):
+
+
+    def update_plot_slider(self, event = None):
         #updates the plot based on the current file
         print("self.current_file_slider.get()" , self.current_file_slider.get())
         self.plot_graph(index = self.current_file_slider.get())
 
+    
 
+    def update_plot(self):
+        #function to be executed in the loop instead of mainloop to 
+        # update the plot in real time with the new parameters
+        x = []
+        y = []
+
+
+        if self.first_plot:
+            if self.plot_params.plot_lower_bound != None :
+                #self.plot1.set_xlim(self.plot_params.plot_lower_bound, self.plot_params.plot_upper_bound)
+                self.matplot_fig.axes[0].set_xlim(left = self.plot_params.plot_lower_bound)
+            if self.plot_params.plot_upper_bound != None :
+                #self.plot1.set_xlim(self.plot_params.plot_lower_bound, self.plot_params.plot_upper_bound)
+                self.matplot_fig.axes[0].set_xlim(right = self.plot_params.plot_upper_bound)
+            x, y = self.matplot_fig.axes[0].lines[0].get_data()
+            #self.plot1.plot(x, y)
+
+            #clear previous fillings of the plot if any
+            for collection in self.plot1.collections:
+                if type(collection) == matplotlib.collections.PolyCollection:
+                    collection.remove()
+
+            #set the peak bounds
+            if self.plot_params.peak1_lower_bound !=0  and self.plot_params.peak1_upper_bound != 0 :
+                mask = (x > self.plot_params.peak1_lower_bound) & (x < self.plot_params.peak1_upper_bound) 
+                self.matplot_fig.axes[0].fill_between(x, y, where=mask, color='gray', alpha=0.5)
+                self.plot_params.peak1_counts = self.get_peak_counts(x, y, self.plot_params.peak1_lower_bound, self.plot_params.peak1_upper_bound)
+                self.peak_count_text1.config(text = self.plot_params.peak1_counts)
+
+            if self.plot_params.peak2_lower_bound !=0  and self.plot_params.peak2_upper_bound != 0 :
+                mask = (x > self.plot_params.peak2_lower_bound) & (x < self.plot_params.peak2_upper_bound) 
+                self.matplot_fig.axes[0].fill_between(x, y, where=mask, color='yellow', alpha=0.5)
+                self.plot_params.peak2_counts = self.get_peak_counts(x, y, self.plot_params.peak2_lower_bound, self.plot_params.peak2_upper_bound)
+                self.peak_count_text2.config(text = self.plot_params.peak2_counts)
+        #update peak counts if the peaks are set
+        #if self.plot_params.peak1_lower_bound !=0  and self.plot_params.peak1_upper_bound != 0 :
+        #    self.plot_params.peak1_counts, self.plot_params.peak2_counts = self.get_peak_counts(x, y)
+        #    self.peak_count_text1.config(text = self.plot_params.peak1_counts)
+        #    self.peak_count_text2.config(text = self.plot_params.peak2_counts)
+
+        # Connect the pick event to a callback function
+        self.matplot_fig.canvas.mpl_connect('button_press_event', onclick)
+        self.matplot_fig.canvas.draw()
+        self.matplot_fig.canvas.flush_events()
+
+        self.root.update()
+
+    def get_peak_counts(self, x, y, lower_bound, upper_bound):
+        #returns the counts in the peak
+        peak_counts = 0
+        for i in range(len(x)):
+            if x[i] > lower_bound and x[i] < upper_bound:
+                peak_counts += y[i]
+
+
+        
+        return peak_counts
+
+    def switch_scale(self):
+        if self.plot_params.scale == "linear":
+            self.plot_params.scale = "log"
+            self.plot1.set_yscale("log")
+        else:
+            self.plot_params.scale = "linear"
+            self.plot1.set_yscale("linear")
+
+    def get_discarded_files(self):
+        try: 
+            discarded_files = int(self.discarded_files_entry.get())
+        except ValueError:
+            discarded_files = 0
+        self.discaarded_files = discarded_files
+        
+        return discarded_files
+
+    def calculate_all_integrated_counts(self, lower_bound, upper_bound):
+        #calculates the integrated counts for all the files
+        peak_counts = []
+        for i in range(len(self.files.all_headless)):
+            x, y = self.get_x_y(i)
+            peak_counts.append(self.get_peak_counts(x, y, lower_bound , upper_bound))
+        return peak_counts
 
 if __name__ == "__main__":
     root = tk.Tk()
     test= AnalysisWindow(root)
-    test.root.mainloop()
+    while True:
+        test.update_plot()
 
 
 
