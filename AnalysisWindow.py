@@ -82,7 +82,7 @@ class AnalysisWindow(tk.Frame):
     def __init__(self, 
                     root, 
                     title : str = "Analysis Window",
-                    geometry : str = "1100x900", 
+                    geometry : str = "1200x900", 
                     default_savefile_folder_name : str = "DataAcquisition",
                     default_savefile_dir : str = None,
                     ):
@@ -144,6 +144,12 @@ class AnalysisWindow(tk.Frame):
         
         ######################################################
 
+        #create a button to open the file selection window 
+        #self.select_files_button = tk.Button(self.file_frame, text="Select Files", command=self.select_files)
+        #self.select_files_button.grid(row=0, column=0, sticky="nsew")
+
+
+
         self.savefile_directory_label = tk.Label(self.file_frame, text="Savefile Directory: ")
         self.savefile_directory_label.grid(row=0, column=0, sticky="nsew")
         self.savefile_directory_label.config(wraplength=100)
@@ -192,7 +198,7 @@ class AnalysisWindow(tk.Frame):
         #create the file list box
         self.file_list_box = tk.Listbox(self.file_frame, selectmode=tk.MULTIPLE)
         self.file_list_box.grid(row=4, column=0, columnspan=2, sticky="nsew")
-        self.file_list_box.config(width=51, height=10)
+        self.file_list_box.config(width=51, height=15)
 
         #populate the file list box
         for file in self.files.files_list:
