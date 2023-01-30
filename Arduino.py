@@ -93,7 +93,7 @@ class Arduino:
         #write data to file
         writer = csv.writer(f)
         writer.writerow(sensor_data)
-
+        
         # close file
         print("Data collection complete")
         print("\n")
