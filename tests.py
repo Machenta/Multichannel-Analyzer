@@ -1,12 +1,28 @@
+import time
+import multiprocessing
+import serial
+import numpy as np
+from datetime import datetime as dt
+import os
+import csv
 import matplotlib.pyplot as plt
+import Arduino
+import tkinter as tk
+import AcquisitionSetupWindow as acq
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from dataclasses import dataclass, field
 
-def onclick(event):
-    plt.axvline(event.xdata)
-    plt.show()
+import sys
+from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow
 
-fig, ax = plt.subplots()
-plt.plot(range(10))
-cid = fig.canvas.mpl_connect('button_press_event', onclick)
-plt.show()
+def change_text():
+    button.setText("Button text changed!")
+
+app = QApplication(sys.argv)
+window = QMainWindow()
+button = QPushButton("Click me!", window)
+button.clicked.connect(change_text)
+button.show()
+sys.exit(app.exec_())
 
 

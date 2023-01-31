@@ -38,7 +38,7 @@ class Settings:
     default_filename : str = "AnalogData"
     current_n : int =0
 
-    def update_with_inputs (self, parms : acq.AcquisitionSettings):
+    def update_with_inputs (self, parms ):
         self.n_acquisitions = parms.n_acquisitions
         self.t_acquisition = parms.t_acquisition
         self.dir_path = parms.savefile_directory
