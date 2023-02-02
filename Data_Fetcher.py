@@ -402,12 +402,15 @@ class Plotter:
             #and if we change a variable in the acquisition parameters, it will change for all processes
             #whereas here it does not propagate to the other processes
             self.n_channels = acquisition_parameters.get_n_channels()
+
+            plt.show()
             
 
 
       def update_y_data(self, acquisition_parameters : AcquisitionParameters):
             #first we have to take into account if the user requested a clear plot
             #while at the same time we have to take into account if the user input a threshold
+            print("here")
             threshold = acquisition_parameters.get_threshold()
             if acquisition_parameters.get_clear_plot() == True:
                   for key in range(self.n_channels):
@@ -418,7 +421,8 @@ class Plotter:
             else:
                   self.y_temp = [acquisition_parameters.current_acq.get(key) if i >= threshold else 0 for i in range(self.n_channels)]
 
-      def redraw_plot(self, acquisition_parameters : AcquisitionParameters):
+      def redraw_plot(self, acquisition_parameters : AcquisitionParameters, cid= None):
+            cid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
             #now we take the y_temp that we have updated and we plot it
             #along with all other elements such as threshold line and cursor line
             #first we update the y data
@@ -440,17 +444,18 @@ class Plotter:
                   self.lines.remove(line)
 
             #now we have to draw the cursor if there is one
-            if acquisition_parameters.get_cursor() != 0:
+            if cid is not None:
+                  self.fig.canvas.mpl_disconnect(cid)
+            cid = self.fig.canvas.mpl_connect('button_press_event', onclick)
+
+            #finally we draw the plot
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
+
+
+            
             
 
-      def update_plot(self, acquisition_parameters : AcquisitionParameters):
-            #plot the data
-            #first we have to take into account if the user requested a clear plot
-            #while at the same time we have to take into account if the user input a threshold
-            if acquisition_parameters.get_clear_plot() == True:
-                  for key in range(acquisition_parameters.get_n_channels()):
-                        acquisition_parameters.update_current_acq_channel(key, 0)
-                  self.y_temp = 
 
 def run(lock: multiprocessing.Lock, acquisition_parameters):
 
@@ -474,23 +479,31 @@ def metrics_backend(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       # this will be used to update the metrics in the main window
 
       #first the plot figure and axes to be updated 
-      fig = plt.figure()
-      ax = fig.add_subplot(111)
-      ax.set_xlabel("Channel")
-      ax.set_ylabel("Counts")
+      #fig = plt.figure()
+      #ax = fig.add_subplot(111)
+      #ax.set_xlabel("Channel")
+      #ax.set_ylabel("Counts")
+#
+      ##initialize the plot with zeros
+      #x=np.linspace(1, acquisition_parameters.get_n_channels(), acquisition_parameters.get_n_channels())
+      #y=np.zeros(acquisition_parameters.get_n_channels())
+#
+      ##setting the limits of the plot 
+      #ax.set_xlim(0, acquisition_parameters.get_n_channels())
+      #ax.set_ylim(0, 100)
+      #ax.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
+#
+      ##create the plot
+      #line, = ax.plot(x, y, 'r-')
+      #plt.show()
 
-      #initialize the plot with zeros
-      x=np.linspace(1, acquisition_parameters.get_n_channels(), acquisition_parameters.get_n_channels())
-      y=np.zeros(acquisition_parameters.get_n_channels())
+      #we create the Plotter object to be passed to the main window
+      #this contains a gif and axes object to be updated
+      plotter = Plotter(acquisition_parameters)
 
-      #setting the limits of the plot 
-      ax.set_xlim(0, acquisition_parameters.get_n_channels())
-      ax.set_ylim(0, 100)
-      ax.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
+      #we update the plot with the data that is already in the acquisition parameters
+      plotter.redraw_plot(acquisition_parameters)
 
-      #create the plot
-      line, = ax.plot(x, y, 'r-')
-      plt.show()
 if __name__ == "__main__":
       #create the manager
       #manager = multiprocessing.Manager()
