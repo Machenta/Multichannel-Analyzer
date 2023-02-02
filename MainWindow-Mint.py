@@ -21,23 +21,13 @@ import AcquisitionSetupWindow as acq
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from dataclasses import dataclass, field
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
 from PyQt5 import QtCore, QtGui, QtWidgets
-import tests
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
-#import Data_Fetcher as df
-
-#from Plotter import  * 
-from Data_Fetcher import *
 
 
-class Ui_MainWindow(QMainWindow):
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1300, 1000)
-        self.width = 1300
-        self.height = 1000
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.ToolbarWidget = QtWidgets.QWidget(self.centralwidget)
@@ -514,25 +504,6 @@ class Ui_MainWindow(QMainWindow):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-
-        self.left = 50
-        self.top = 50
-        self.title = 'MainWindow'
-        self.initPlot()
-
-    def initPlot(self):
-        #m = tests.Plotter(self.PlotdrawWidget, width=10, height=12)
-        #m.move(0,0)
-        #self.setWindowTitle(self.title)
-        #self.setGeometry(self.left, self.top, self.width, self.height)
-        #self.show()
-
-        m = Plotter(self.PlotdrawWidget, width=10, height=12)
-        m.move(0,0)
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
-
-
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
@@ -577,11 +548,6 @@ class Ui_MainWindow(QMainWindow):
         self.menuAnalysis.setTitle(_translate("MainWindow", "Analysis"))
         self.menuHelp.setTitle(_translate("MainWindow", "Help"))
         self.actionAcquisition_Settings.setText(_translate("MainWindow", "Acquisition Settings"))
-
-
-        
-
-    
 
 
 if __name__ == "__main__":
