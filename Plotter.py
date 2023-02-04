@@ -1,13 +1,11 @@
 
-from multiprocessing import Process, Manager
-from multiprocessing.managers import BaseManager
 
 import numpy as np
 from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import tkinter as tk
 from dataclasses import dataclass, field
-
+import matplotlib
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
 from PyQt5.QtGui import QPainter, QPen
@@ -16,20 +14,36 @@ from PyQt5.QtCore import Qt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-from Data_Fetcher import *
+from AcquisitionParams import *
+
+def onclick(event : matplotlib.backend_bases.MouseEvent):
+    global x_val1, y_val1
+
+    if event.inaxes:
+        fig = plt.gcf()
+        if hasattr(fig, 'line'):
+            fig.line.remove()
+        fig.line = plt.axvline(event.xdata, color='black')
+        x_val1 = event.xdata
+        y_val1 = event.ydata
+        fig.canvas.draw()
+    return x_val1
 
 
 class Plotter(FigureCanvas):
-      def __init__(self, acquisition_parameters : AcquisitionParameters, parent=None, width=5, height=4, dpi=100):
+      def __init__(self, acquisition_parameters : AcquisitionParameters, parent=None, width=7, height=6, dpi=100):
       #creates all necessary parameters for the plot to be displayed
       #intializes an empty plot with a line y=0 for each channel
+            self.n_channels = acquisition_parameters.get_n_channels()
+            print("n_channels1: " + str(self.n_channels))
+
             #initialize the plot
             self.fig, self.ax = plt.subplots()
             #set the title
             #plt.title("Acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + acquisition_parameters.get_n_acquisitions(), fontsize=16, fontweight='bold')
             #set a tentative x and y 
-            self.x = np.arange(0, 100, 1)
-            self.y = np.arange(0, 100, 1)
+            self.x = np.arange(0, self.n_channels, 1)
+            self.y = np.arange(0, self.n_channels, 1)
             #set the x and y limits
             self.ax.set_xlim(0, max(self.x))
             self.ax.set_ylim(0, max(self.y)+5)
@@ -42,6 +56,7 @@ class Plotter(FigureCanvas):
             #set the grid 
             self.ax.grid(True, which='both', axis='both', linestyle='--', linewidth=0.5, color='grey', alpha=0.5)
             self.y_temp = np.arange(0, 100, 1)
+
 
             #assimilate some variables from the acquisition parameters to make the code more readable and easier to change
             #this should only be done with variables that are not going to change during the acquisition
@@ -56,6 +71,7 @@ class Plotter(FigureCanvas):
                                     QSizePolicy.Expanding,
                                     QSizePolicy.Expanding)
             FigureCanvas.updateGeometry(self)
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
 
 
@@ -68,11 +84,16 @@ class Plotter(FigureCanvas):
             if acquisition_parameters.get_clear_plot() == True:
                   for key in range(self.n_channels):
                         acquisition_parameters.update_current_acq_channel(key, 0)
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(self.n_channels)]
+                        print(acquisition_parameters.get_current_acq_channel(key))
+                  #self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(acquisition_parameters.get_n_channels())]
                   #since we have cleared the plot, we have to set the clear plot flag to false
                   acquisition_parameters.set_clear_plot(False)
             else:
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(self.n_channels)]
+                  #print(acquisition_parameters.get_current_acq_channel(100))
+                  print(acquisition_parameters.get_current_acq())
+                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(acquisition_parameters.get_n_channels())]
+
+                  a=1
 
       def redraw_plot(self, acquisition_parameters : AcquisitionParameters, cid= None):
             cid = self.fig.canvas.mpl_connect('button_press_event', onclick)

@@ -1,76 +1,32 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+
+import pyqtgraph as pg
+import pyqtgraph.exporters
 import numpy as np
 
-class App(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.left = 50
-        self.top = 50
-        self.title = 'PyQt5 matplotlib example - pythonspot.com'
-        self.width = 700
-        self.height = 500
-        
+# define the data
+theTitle = "pyqtgraph plot"
+y = [2,4,6,8,10,12,14,16,18,20]
+y2 = [0,1,2,4,12,14,16,17,14,22]
+x = range(0,10)
 
-        self.initUI()
+# create plot
+plt = pg.plot()
+plt.showGrid(x=True,y=True)
+plt.addLegend()
 
-    def initUI(self):
-        m = Plotter(self, width=5, height=4)
-        m.move(0,0)
+# set properties
+plt.setLabel('left', 'Value', units='V')
+plt.setLabel('bottom', 'Time', units='s')
+plt.setXRange(0,10)
+plt.setYRange(0,20)
+plt.setWindowTitle('pyqtgraph plot')
 
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
-        self.show()
+# plot
+c1 = plt.plot(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='red')
+c2 = plt.plot(x, y2, pen='r', symbol='o', symbolPen='r', symbolBrush=0.2, name='blue')
 
-class Plotter(FigureCanvas):
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig, self.ax = plt.subplots()
-
-        self.x = np.arange(0, 100, 1)
-        self.y = np.arange(0, 100, 1)
-        self.ax.set_xlim(0, max(self.x))
-        self.ax.set_ylim(0, max(self.y)+5)
-
-        self.ax.set_xlabel("Channel")
-        self.ax.set_ylabel("Counts")
-
-        FigureCanvas.__init__(self, self.fig)
-        self.setParent(parent)
-
-        FigureCanvas.setSizePolicy(self,
-                                    QSizePolicy.Expanding,
-                                    QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
-        self.plot()
-
-    def plot(self):
-        import random
-        #data = [random.random() for i in range(25)]
-        #ax = self.figure.add_subplot(111)
-        #ax.plot(data, 'r-')
-        #ax.set_title('PyQt Matplotlib Example')
-        self.draw()
-
-        self.x = np.arange(0, 100, 1)
-        self.y = np.arange(0, 100, 1)
-        self.ax.set_xlim(0, max(self.x))
-        self.ax.set_ylim(0, max(self.y)+5)
-
-        self.ax.set_xlabel("Channel")
-        self.ax.set_ylabel("Counts")
-
-        self.ax.plot(self.x, self.y, 'r-')
-        self.ax.set_title('Spectrum')
-        self.draw()
-
+## Start Qt event loop.
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = App()
-    sys.exit(app.exec_())
-
-
-
-
+    import sys
+    if sys.flags.interactive != 1 or not hasattr(pg.QtCore, 'PYQT_VERSION'):
+        pg.QtGui.QGuiApplication.exec_()
