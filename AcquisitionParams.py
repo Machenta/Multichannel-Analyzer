@@ -5,7 +5,7 @@ import csv
 
 class AcquisitionParameters:
       def __init__(self, n_acquisitions : int = 1, t_acquisition : float = 5):
-            self.acquisition_running : bool = True
+            self.acquisition_running : bool = False
             self.n_channels : int = 10
             self.arduino_port : str = "COM3"
             self.baud : int = 9600
@@ -28,6 +28,10 @@ class AcquisitionParameters:
             self.savefile_format : str = ".csv"
             self.plot_scale : str = "linear"
             self.clear_plot : bool = False
+            self.restart : bool = False
+            self.total_counts : int = 0
+            self.window_is_open : bool = False
+
 
             #self.create_dict
 
@@ -187,6 +191,26 @@ class AcquisitionParameters:
       def set_clear_plot(self, value : bool):
             self.clear_plot = value
 
+      def get_restart(self):
+            return self.restart
+
+      def set_restart(self, value : bool):
+            self.restart = value
+
+      def get_total_counts(self):
+            return self.total_counts
+
+      def set_total_counts(self, value : int):
+            self.total_counts = value
+
+      def update_total_counts(self):
+            self.total_counts +=1
+
+      def get_window_is_open(self):
+            return self.window_is_open
+      
+      def set_window_is_open(self, value : bool):
+            self.window_is_open = value
 
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),

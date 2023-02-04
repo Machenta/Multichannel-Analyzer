@@ -6,12 +6,13 @@ from datetime import datetime as dt
 import matplotlib.pyplot as plt
 import tkinter as tk
 import matplotlib
+import time
 from dataclasses import dataclass, field
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
 from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -20,7 +21,7 @@ from matplotlib.figure import Figure
 from AcquisitionParams import * 
 import ArduinoV2 as device
 from DataRetriever import *
-from MainWindow import *
+from MainWindow_Simple import *
 
 def onclick(event : matplotlib.backend_bases.MouseEvent):
     global x_val1, y_val1
@@ -36,7 +37,7 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
     return x_val1
 
 
-def run(lock: multiprocessing.Lock, acquisition_parameters):
+def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
 
       dev = device.Arduino()
 
@@ -45,26 +46,24 @@ def run(lock: multiprocessing.Lock, acquisition_parameters):
 
       data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
 
-def run_main_window(lock: multiprocessing.Lock, acquisition_parameters):
-      app = QtWidgets.QApplication(sys.argv)
-      MainWindow = QtWidgets.QMainWindow()
-      ui = Ui_MainWindow()
-      ui.setupUi(MainWindow, acquisition_parameters)
-      MainWindow.show()
+def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+      app = QApplication(sys.argv)
+      window = MainWindow(acquisition_parameters)
+      window.show()
+      def check_window_open():
+            if window.isVisible():
+                  print("window open")
+                  acquisition_parameters.set_window_is_open(True)
+                  QTimer.singleShot(1000, check_window_open)
+            else:
+                  print("window closed")
+                  acquisition_parameters.set_window_is_open(False)
+
+      QTimer.singleShot(1000, check_window_open)
+      print("Window is closed")
       sys.exit(app.exec_()) 
 
-def metrics_backend(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
-      #create the metrics backend to pass to the main window 
-      # this will be used to update the metrics in the main window
 
-      #we create the Plotter object to be passed to the main window
-      #this contains a gif and axes object to be updated
-      plotter = Plotter(acquisition_parameters)
-      print("here###############################################")
-      #we update the plot with the data that is already in the acquisition parameters
-      while acquisition_parameters.get_acquisition_running():
-            with lock:
-                  plotter.redraw_plot(acquisition_parameters)
 
 if __name__ == "__main__":
       #create the manager
@@ -88,20 +87,22 @@ if __name__ == "__main__":
 
              
       #create the process
+      GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
       process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters))
       #process_main_window = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
       #create another process
       #process2 = multiprocessing.Process(target=run2, args=(lock, managed_acquisition_parameters))
-      metrics_process = multiprocessing.Process(target=metrics_backend, args=(lock, managed_acquisition_parameters))
-      GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
+
+      
 
       #start the process
-      process.start()
-      metrics_process.start()
       GUI_process.start()
+      process.start()
+      
 
 
       #join the process
-      process.join()
-      metrics_process.join()
+      
+      #metrics_process.join()
       GUI_process.join()
+      process.join()

@@ -16,7 +16,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 #import Data_Fetcher as df
 
 #from Plotter import  * 
-from Plotter import *
+from PlotterQT import *
 from AcquisitionParams import *
 
 
@@ -517,12 +517,15 @@ class Ui_MainWindow(QMainWindow):
 
         m = Plotter(acquisition_parameters =AcquisitionParameters, 
                     parent = self.PlotdrawWidget, 
-                    width=15, 
-                    height=15)
+                    width=10, 
+                    height=10)
 
         m.move(0,0)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(m)
+        self.PlotdrawWidget.setLayout(layout)
 
 
     def retranslateUi(self, MainWindow : QtWidgets.QMainWindow):
