@@ -7,10 +7,10 @@ from datetime import datetime as dt
 import tkinter as tk
 from dataclasses import dataclass, field
 import matplotlib
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
-from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtCore import Qt
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
+from PyQt6.QtGui import QPainter, QPen
+from PyQt6.QtCore import Qt
 from time import sleep
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

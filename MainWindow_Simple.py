@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QTextEdit, QApplication
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QTextEdit, QApplication
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 import pyqtgraph as pg
 from AcquisitionParams import *
 from PlotterQT import *

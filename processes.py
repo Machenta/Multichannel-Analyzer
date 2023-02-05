@@ -9,10 +9,10 @@ import matplotlib
 import time
 from dataclasses import dataclass, field
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
-from PyQt5.QtGui import QPainter, QPen
-from PyQt5.QtCore import Qt, QTimer
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
+from PyQt6.QtGui import QPainter, QPen
+from PyQt6.QtCore import Qt, QTimer
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -75,7 +75,7 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       signal = AppSignal()
       signal.finished.connect(app.quit)
       app.aboutToQuit.connect(signal.finished.emit)
-      sys.exit(app.exec_()) 
+      sys.exit(app.exec()) 
 
 
 
