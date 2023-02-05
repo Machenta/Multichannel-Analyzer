@@ -6,7 +6,7 @@ import csv
 class AcquisitionParameters:
       def __init__(self, n_acquisitions : int = 1, t_acquisition : float = 5):
             self.acquisition_running : bool = False
-            self.n_channels : int = 10
+            self.n_channels : int = 512
             self.arduino_port : str = "COM3"
             self.baud : int = 9600
             self.n_acquisitions : int = n_acquisitions

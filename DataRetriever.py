@@ -2,6 +2,7 @@ import ArduinoV2 as device
 from AcquisitionParams import *
 import multiprocessing
 import datetime as dt
+from time import sleep
 
 class DataRetriever: 
       def __init__(self, 
@@ -73,23 +74,21 @@ class DataRetriever:
 
       def get_one_full_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
             print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
-            while acquisition_parameters.get_window_is_open() == True:
 
-                  #Prepare the acquisition
-                  self.prepare_acquisition(acquisition_parameters)
-
-                  #check condictions for acquisition
-
-                  #make sure the acquisition is supposed to be running 
-                  while acquisition_parameters.get_acquisition_running() == True:
-                        t_total_acq = 0 
-
-                         #reset the current live time on the acquisition parameters
-                        acquisition_parameters.set_live_time(0) 
-
-                        #run the acquisition for the preset time
-                        while (t_total_acq) < acquisition_parameters.get_t_acquisition() and acquisition_parameters.get_acquisition_running() == True:
-
+            #Prepare the acquisition
+            self.prepare_acquisition(acquisition_parameters)
+            #check condictions for acquisition
+            #make sure the acquisition is supposed to be running 
+            t_total_acq = 0
+            while acquisition_parameters.get_acquisition_running() == True:
+                   
+                   #reset the current live time on the acquisition parameters
+                  acquisition_parameters.set_live_time(0) 
+                  #run the acquisition for the preset time
+                  while (t_total_acq) < acquisition_parameters.get_t_acquisition():
+                        while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < acquisition_parameters.get_t_acquisition():
+                        #check the stop acquisition flag by evaluating the "acquisition_running" flag 
+                              #get the time at the start of the acquisition
                               t_start = dt.datetime.now()
                               with lock:
                                     #get the data from the arduino
@@ -98,26 +97,50 @@ class DataRetriever:
                                     #acquisition_parameters.current_acq[int(val)] = val
                                     acquisition_parameters.update_current_acq_channel(int(val))
                                     #save the data
-                                    print("Data: " + str(val))
+                                    #print("Data: " + str(val))
+                              #get the time at the end of the acquisition
                               t_end = dt.datetime.now()
-
-                              #update the current acquisition duration with the time it took to get the data
+                              #update the current acquisition duration with the time it took to get the data by adding the time it took to get the data
                               t_total_acq += (t_end-t_start).total_seconds()
-                              print("t_total_acq: " + str(t_total_acq))
-                              print("t_acquisition: " + str(acquisition_parameters.get_t_acquisition()))
-                        #update the current acquisition duration with the time it took to get the data
-                        acquisition_parameters.set_current_acq_duration(t_total_acq)
-                        #save the acquisition
-                        self.save_acquisition(acquisition_parameters)         
-                        #reset the running_acquisition flag
-                        acquisition_parameters.set_acquisition_running(False)
+                              #update total counts in the acquisition
+                              if val != 0:
+                                    acquisition_parameters.update_total_counts()
+                                    #update the live time
+                                    acquisition_parameters.set_live_time(round(t_total_acq,4))
+                              #print("t_total_acq: " + str(t_total_acq))
+                              #print("t_acquisition: " + str(acquisition_parameters.get_t_acquisition()))
+                  #update the current acquisition duration with the time it took to get the data
+                  acquisition_parameters.set_current_acq_duration(t_total_acq)
+                  #save the acquisition
+                  self.save_acquisition(acquisition_parameters)        
+                  #reset the running_acquisition flag
+                  acquisition_parameters.set_acquisition_running(False)
+                  sleep(0.1)
+            
 
       def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
             #getting multiple acquisitions is just a loop of get_one_full_acquisition
-            while acquisition_parameters.get_window_is_open() == True:
-                  #check condictions for acquisition
-                  while acquisition_parameters.get_current_n() < acquisition_parameters.get_n_acquisitions():
-                        # we need to reset the running_acquisition flag to true
-                        print("Starting acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + str(acquisition_parameters.get_n_acquisitions()))
-                        acquisition_parameters.set_acquisition_running(True)
-                        self.get_one_full_acquisition(lock , acquisition_parameters)
+            while True:
+                  while acquisition_parameters.get_window_is_open() == True:
+                        #check condictions for acquisition
+                        n=0
+                        while acquisition_parameters.get_current_n() < acquisition_parameters.get_n_acquisitions():
+                              #make sure the acquisition is supposed to be running
+                              
+                              while acquisition_parameters.get_acquisition_running() == True:
+                                    #start the acquisition for the number of times specified
+                                    # we need to reset the running_acquisition flag to true
+                                    print("Starting acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + str(acquisition_parameters.get_n_acquisitions()))
+                                    
+                                    self.get_one_full_acquisition(lock , acquisition_parameters)
+                                    #update the current acquisition number
+                                    n += 1
+                                    acquisition_parameters.set_current_n(n)
+                                    #if the number of acquisitions is reached, stop the acquisition if not, continue
+                                    if acquisition_parameters.get_current_n() == acquisition_parameters.get_n_acquisitions():
+                                          acquisition_parameters.set_acquisition_running(False)
+                                          print("Acquisition finished")
+                                          sleep(0.2)
+                                    else:
+                                          acquisition_parameters.set_acquisition_running(True)
+                                    sleep(0.1)

@@ -23,6 +23,9 @@ import ArduinoV2 as device
 from DataRetriever import *
 from MainWindow_Simple import *
 
+
+
+
 def onclick(event : matplotlib.backend_bases.MouseEvent):
     global x_val1, y_val1
 
@@ -39,7 +42,7 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
 
 def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
 
-      dev = device.Arduino()
+      dev = device.Arduino(channels=acquisition_parameters.get_n_channels())
 
       #create the data retriever
       data_retriever = DataRetriever(dev, acquisition_parameters)
@@ -52,15 +55,26 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       window.show()
       def check_window_open():
             if window.isVisible():
-                  print("window open")
+                  #print("window open")
                   acquisition_parameters.set_window_is_open(True)
-                  QTimer.singleShot(1000, check_window_open)
+                  window.update_plot(acquisition_parameters)
+                  window.populate_metrics_grid(acquisition_parameters)
+                  window.update_peak_counts(acquisition_parameters)
+                  #sleep(0.2)
+                  QTimer.singleShot(10, check_window_open)
             else:
-                  print("window closed")
+                  #print("window closed")
                   acquisition_parameters.set_window_is_open(False)
+                  window.update_plot(acquisition_parameters)
+                  window.populate_metrics_grid(acquisition_parameters)
+                  window.update_peak_counts(acquisition_parameters)
 
-      QTimer.singleShot(1000, check_window_open)
+      QTimer.singleShot(10, check_window_open)
       print("Window is closed")
+
+      signal = AppSignal()
+      signal.finished.connect(app.quit)
+      app.aboutToQuit.connect(signal.finished.emit)
       sys.exit(app.exec_()) 
 
 
@@ -77,8 +91,8 @@ if __name__ == "__main__":
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
 
-      managed_acquisition_parameters.set_t_acquisition(1)
-      managed_acquisition_parameters.set_n_acquisitions(1)
+      managed_acquisition_parameters.set_t_acquisition(40)
+      managed_acquisition_parameters.set_n_acquisitions(2)
       managed_acquisition_parameters.set_n_channels(512) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
 
