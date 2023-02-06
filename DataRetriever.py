@@ -81,8 +81,9 @@ class DataRetriever:
             #check condictions for acquisition
             #make sure the acquisition is supposed to be running 
             t_total_acq = 0
+            live_time = 0
             while acquisition_parameters.get_acquisition_running() == True:
-                   
+
                    #reset the current live time on the acquisition parameters
                   acquisition_parameters.set_live_time(0) 
                   #run the acquisition for the preset time
@@ -102,16 +103,22 @@ class DataRetriever:
                               #get the time at the end of the acquisition
                               t_end = dt.datetime.now()
                               #update the current acquisition duration with the time it took to get the data by adding the time it took to get the data
+
                               t_total_acq += (t_end-t_start).total_seconds()
+
+                              #subtract the dead time from the acquisition time of 100us
+                              live_time += (t_end-t_start).total_seconds() - 0.0001
                               #update total counts in the acquisition
                               if val != 0:
                                     acquisition_parameters.update_total_counts()
                                     #update the live time
-                                    acquisition_parameters.set_live_time(round(t_total_acq,4))
+                                    acquisition_parameters.set_current_acq_duration(t_total_acq)
+                                    acquisition_parameters.set_live_time(live_time)
                               #print("t_total_acq: " + str(t_total_acq))
                               #print("t_acquisition: " + str(acquisition_parameters.get_t_acquisition()))
                   #update the current acquisition duration with the time it took to get the data
                   acquisition_parameters.set_current_acq_duration(t_total_acq)
+                  acquisition_parameters.set_live_time(live_time)
                   #save the acquisition
                   self.save_acquisition(acquisition_parameters)        
                   #reset the running_acquisition flag
@@ -137,6 +144,9 @@ class DataRetriever:
                                     #update the current acquisition number
                                     n += 1
                                     acquisition_parameters.set_current_n(n)
+
+                                    #reset total counts
+                                    acquisition_parameters.set_total_counts(0)
                                     #if the number of acquisitions is reached, stop the acquisition if not, continue
                                     if acquisition_parameters.get_current_n() == acquisition_parameters.get_n_acquisitions():
                                           acquisition_parameters.set_acquisition_running(False)
