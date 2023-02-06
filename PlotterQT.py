@@ -148,6 +148,16 @@ class Plotter(QWidget):
                   self.plot.addItem(self.peak2_line_upper)
             self.peak2_line_upper.setPos(user_entries.upper_peak2)
 
+            if acquisition_parameters.get_plot_scale() == "log":
+                  self.plot.setLogMode(y=True)
+            else:
+                  self.plot.setLogMode(y=False)
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
+
+      def set_lin_log_scale(self, acquisition_parameters : AcquisitionParameters):
+            if acquisition_parameters.get_plot_scale == True:
+                  self.plot.setLogMode(x= False, y=True, min=0)
+            else:
+                  self.plot.setLogMode(x= False, y=False, min=0)

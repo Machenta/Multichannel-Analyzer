@@ -6,7 +6,7 @@ from AcquisitionParams import *
 from PlotterQT import *
 from functools import partial
 
-uiclass, baseclass = pg.Qt.loadUiType("untitled.ui")
+uiclass, baseclass = pg.Qt.loadUiType("MainWindow.ui")
 
 class AppSignal(QObject):
     finished = pyqtSignal()
@@ -33,6 +33,7 @@ class MainWindow(uiclass, baseclass):
             self.restart_button.clicked.connect(lambda: self.restart_button_clicked(acq_params))
             self.stop_button.clicked.connect(lambda: self.stop_button_clicked(acq_params))
             self.clear_button.clicked.connect(lambda: self.clear_button_clicked(acq_params))
+            self.lin_log_button.clicked.connect(lambda: self.lin_log_button_clicked(acq_params))
 
             #populate the metrics grid with the metrics that are available
             self.populate_metrics_grid(acq_params)
@@ -194,6 +195,13 @@ class MainWindow(uiclass, baseclass):
             print("clear button clicked")
             acq_params.set_clear_plot(True)
             print("self.acq_params", acq_params.get_clear_plot())
+
+      def lin_log_button_clicked(self, acq_params : AcquisitionParameters):
+            print("lin_log button clicked")
+            if acq_params.get_plot_scale() == "linear":
+                  acq_params.set_plot_scale("log")
+            else:
+                  acq_params.set_plot_scale("linear")      
 
       def populate_metrics_grid(self, acq_params : AcquisitionParameters):
             #print("populate metrics grid")

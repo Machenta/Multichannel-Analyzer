@@ -6,12 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1271</width>
-    <height>1229</height>
+    <width>1185</width>
+    <height>897</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Multichannel Analyzer v1</string>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QWidget" name="ToolbarWidget" native="true">
@@ -76,6 +85,19 @@
      </property>
      <property name="autoDefault">
       <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="lin_log_button">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>0</y>
+       <width>101</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Linear/Log Scale</string>
      </property>
     </widget>
    </widget>
@@ -726,6 +748,24 @@
      </item>
      <item row="0" column="0" colspan="2">
       <widget class="QLabel" name="plot_range_label">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="sizeIncrement">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="font">
         <font>
          <pointsize>14</pointsize>
@@ -914,7 +954,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1271</width>
+     <width>1185</width>
      <height>21</height>
     </rect>
    </property>
