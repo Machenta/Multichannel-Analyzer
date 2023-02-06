@@ -49,6 +49,13 @@ def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParamete
 
       data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
 
+def quit_application():
+      # Perform any necessary cleanup tasks here
+
+      for process in multiprocessing.active_children():
+            process.terminate()
+      sys.exit()
+
 def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
       app = QApplication(sys.argv)
       window = MainWindow(acquisition_parameters)
@@ -75,6 +82,7 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       signal = AppSignal()
       signal.finished.connect(app.quit)
       app.aboutToQuit.connect(signal.finished.emit)
+      app.aboutToQuit.connect(quit_application)
       sys.exit(app.exec()) 
 
 

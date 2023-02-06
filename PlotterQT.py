@@ -54,6 +54,7 @@ class Plotter(QWidget):
             #self.x_label.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
             self.plot.setXRange(0,self.n_channels)
             self.plot.setYRange(0,10)
+            #self.plot.setInteraction(pan=False)
 
             # plot
             self.c1= pg.PlotCurveItem(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum')
@@ -95,7 +96,6 @@ class Plotter(QWidget):
                   #print(acquisition_parameters.get_current_acq())
                   self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(acquisition_parameters.get_n_channels())]
 
-                  a=1
 
             #print("y_temp: " + str(self.y_temp))
 

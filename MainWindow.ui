@@ -508,8 +508,8 @@
    <widget class="QWidget" name="gridLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>700</y>
+      <x>820</x>
+      <y>690</y>
       <width>340</width>
       <height>151</height>
      </rect>
@@ -526,9 +526,9 @@
       <widget class="QLabel" name="lower_bound_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -543,9 +543,9 @@
       <widget class="QLabel" name="upper_bound_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -618,9 +618,9 @@
       <widget class="QLabel" name="counts_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -705,10 +705,10 @@
    <widget class="QWidget" name="gridLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>360</x>
-      <y>700</y>
+      <x>10</x>
+      <y>690</y>
       <width>141</width>
-      <height>121</height>
+      <height>87</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="PlotRangeGrid">
@@ -716,9 +716,9 @@
       <widget class="QLabel" name="plot_max_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -733,9 +733,9 @@
       <widget class="QLabel" name="plot_min_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -770,6 +770,7 @@
         <font>
          <pointsize>14</pointsize>
          <weight>75</weight>
+         <italic>false</italic>
          <bold>true</bold>
         </font>
        </property>
@@ -806,10 +807,10 @@
    <widget class="QWidget" name="gridLayoutWidget_4">
     <property name="geometry">
      <rect>
-      <x>510</x>
-      <y>700</y>
+      <x>300</x>
+      <y>690</y>
       <width>151</width>
-      <height>121</height>
+      <height>91</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="ChannelSelectGrid">
@@ -824,9 +825,9 @@
       <widget class="QLabel" name="channel_select_counts_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -841,9 +842,9 @@
       <widget class="QLabel" name="channel_select_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <pointsize>12</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -886,8 +887,8 @@
    <widget class="QWidget" name="gridLayoutWidget_5">
     <property name="geometry">
      <rect>
-      <x>670</x>
-      <y>700</y>
+      <x>170</x>
+      <y>690</y>
       <width>111</width>
       <height>88</height>
      </rect>

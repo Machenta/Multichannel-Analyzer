@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QTextEdit, QApplication
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QTextEdit, QApplication, QFileDialog
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 import pyqtgraph as pg
 from AcquisitionParams import *
@@ -7,6 +7,8 @@ from PlotterQT import *
 from functools import partial
 
 uiclass, baseclass = pg.Qt.loadUiType("MainWindow.ui")
+
+acquisitionsettings_ui, acquisitionsettings_base = pg.Qt.loadUiType("AcquisitionSettingsWindow.ui")
 
 class AppSignal(QObject):
     finished = pyqtSignal()
@@ -75,7 +77,9 @@ class MainWindow(uiclass, baseclass):
             self.threshold_entry.textChanged.connect(self.text_changed_threshold)
             #self.threshold_entry.returnPressed.connect(self.return_pressed)
 
+            #give functionality to the menubar 
 
+            self.actionAcquisition_Settings.triggered.connect(lambda: self.open_acquisition_settings(acq_params=acq_params))
 
       def initPlot(self, AcquisitionParameters: AcquisitionParameters):
         #m = tests.Plotter(self.PlotdrawWidget, width=10, height=12)
@@ -212,7 +216,10 @@ class MainWindow(uiclass, baseclass):
                   self.acquisition_status.setText("Stopped")
             
             self.start_time.setText(str(acq_params.get_start_time()))
-            self.preset_time.setText(str(acq_params.get_t_acquisition()))
+            if acq_params.get_t_acquisition() > 9999999999:
+                  self.preset_time.setText("N/A")
+            else:
+                  self.preset_time.setText(str(round(acq_params.get_t_acquisition(),2)))
             self.n_channels.setText(str(acq_params.get_n_channels()))
             self.n_acquisitions.setText(str(acq_params.get_n_acquisitions()))
             self.current_acquisition.setText(str(acq_params.get_current_n() ))
@@ -253,12 +260,124 @@ class MainWindow(uiclass, baseclass):
             self.populate_metrics_grid(acq_params)
             self.update_peak_counts(acq_params)     
             
+      def open_acquisition_settings(self, acq_params : AcquisitionParameters):
+            #open the acquisition settings window
+            acquisition_settings_window = AcquisitionSettingsWindow(acq_params)
+            #keep the window open
+            acquisition_settings_window.show()
+            acquisition_settings_window.exec()
 
 
+#creating the acquisition parameters window 
+
+class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base):
+      def __init__(self, acq_params : AcquisitionParameters) -> None:
+            super().__init__()
+            self.setupUi(self)
+            self.left = 50
+            self.top = 50
+            self.width = 400
+            self.height = 283
+            self.title = 'Acquisition Settings'
+
+            self.setWindowTitle(self.title)
+            self.setGeometry(self.left, self.top, self.width, self.height)
+
+            #give functionality to the QLineEdits 
+            self.n_acquisitions_entry.textChanged.connect(lambda text: self.text_changed_n_acquisitions(text= text,acq_params= acq_params))
+            self.t_acquisition_entry.textChanged.connect(lambda text: self.text_changed_t_acquisition(text= text,acq_params= acq_params))
+            self.default_filename_entry.textChanged.connect(lambda text: self.text_changed_default_filename(text= text,acq_params= acq_params))
+            self.directory_entry.textChanged.connect(lambda text: self.text_changed_directory(text= text,acq_params= acq_params))
+
+            #set default values for the QLineEdits
+            self.n_acquisitions_entry.setText(str(acq_params.get_n_acquisitions()))
+            self.t_acquisition_entry.setText(str(acq_params.get_t_acquisition()))
+            self.default_filename_entry.setText(str(acq_params.get_default_filename()))
+            self.directory_entry.setText(str(acq_params.get_acquisition_filesave_directory()))
+
+
+            #give functionality to the QPushButtons
+
+            self.select_directory_button.clicked.connect(lambda: self.directory_button_clicked(acq_params= acq_params))
+            self.single_run_button.clicked.connect(lambda: self.disable_acquisition_run_params(acq_params= acq_params))
+
+      def text_changed_t_acquisition(self, text, acq_params : AcquisitionParameters):
+            #text = line_edit.text()
+            try:
+                  self.t_acquisition = int(text)
+                  acq_params.set_t_acquisition(self.t_acquisition)
+                  print(f"Text changed: {acq_params.get_t_acquisition()}")
+            except ValueError:
+                  print("ValueError")
+                  self.t_acquisition = 0
+
+      def text_changed_n_acquisitions(self, text, acq_params : AcquisitionParameters):
+            #text = line_edit.text()
+            try:
+                  self.n_acquisitions = int(text)
+                  acq_params.set_n_acquisitions(self.n_acquisitions)
+                  print(f"Text changed: {acq_params.get_n_acquisitions()}")
+            except ValueError:
+                  print("ValueError")
+                  self.n_acquisitions = 0
+
+
+      def text_changed_default_filename(self, text, acq_params : AcquisitionParameters):
+            #text = line_edit.text()
+            try:
+                  self.default_filename = str(text)
+                  print(f"Text changed: {text}")
+                  acq_params.set_default_filename(self.default_filename)
+            except ValueError:
+                  print("ValueError")
+                  self.default_filename = "default_filename"
+
+      def text_changed_directory(self, text, acq_params : AcquisitionParameters):
+            #text = line_edit.text()
+            try:
+                  self.directory = str(text)
+                  print(f"Text changed: {text}")
+                  acq_params.set_acquisition_filesave_directory(self.directory)
+            except ValueError:
+                  print("ValueError")
+                  self.directory = "default_directory"
+
+      def directory_button_clicked(self, acq_params : AcquisitionParameters):
+            print("directory button clicked")
+            self.directory = QFileDialog.getExistingDirectory(self, "Select Directory")
+            print("directory", self.directory)
+            self.directory_entry.setText(self.directory)
+            acq_params.set_acquisition_filesave_directory(self.directory)
+
+      def single_run_button_clicked(self, acq_params : AcquisitionParameters):
+            print("single run button clicked")
+            acq_params.set_n_acquisitions(1)
+            acq_params.set_t_acquisition(9999999999999999999999999)
+            #change the t_acquition label of the main window
+            
+      def disable_acquisition_run_params(self, acq_params : AcquisitionParameters):
+            #this function disables the acquisition run parameters for an infinite acquisition
+            if self.n_acquisitions_entry.isEnabled():
+                  self.n_acquisitions_entry.setEnabled(False)
+            if self.t_acquisition_entry.isEnabled():
+                  self.t_acquisition_entry.setEnabled(False)
+
+            else:
+                  self.n_acquisitions_entry.setEnabled(True)
+                  self.t_acquisition_entry.setEnabled(True)
+
+            acq_params.set_n_acquisitions(1)
+            acq_params.set_t_acquisition(9999999999999999999999999)
+
+      def closeEvent(self, event):
+            #update the acquisition parameters with the new values
+            
+            print("close event")
+            super().closeEvent(event)
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    acq_params = AcquisitionParameters()
-    window = MainWindow(acq_params)
-    window.show()
-    sys.exit(app.exec_())
+      app = QApplication(sys.argv)
+      parms= AcquisitionParameters()
+      window = AcquisitionSettingsWindow(parms)
+      window.show()
+      sys.exit(app.exec())

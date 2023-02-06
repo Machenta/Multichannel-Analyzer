@@ -46,7 +46,8 @@ class DataRetriever:
 
       def set_save_directory(self, acquisition_parameters : AcquisitionParameters):
             #if the directory does not exist, create it
-            save_dir = os.path.join(acquisition_parameters.get_dir_path(), acquisition_parameters.get_default_save_folder())
+            save_dir= acquisition_parameters.get_acquisition_filesave_directory()
+            #save_dir = os.path.join(acquisition_parameters.get_dir_path(), acquisition_parameters.get_default_save_folder())
             if not os.path.exists(save_dir):
                   os.makedirs(save_dir)
                   print("Directory " , save_dir ,  " Created ")
