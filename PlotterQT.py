@@ -40,7 +40,7 @@ class Plotter(QWidget):
 
             #initialize the plot
       
-            y = [0 for i in range(self.n_channels)]
+            y = [0.01 for i in range(self.n_channels)]
             x = [i for i in range(self.n_channels)]
             
 
@@ -106,7 +106,16 @@ class Plotter(QWidget):
             self.update_y_data(acquisition_parameters)
             #now we update the plot with the new data
             self.c1.setData(y= self.y_temp)
-            self.plot.setYRange(0,1.1*max(self.y_temp)+10)
+            self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
+            #self.plot.getAxis("left").setLimits(min=0.01, max=1.1*max(self.y_temp)+10)
+            if acquisition_parameters.get_plot_scale() == "log":
+                  self.plot.setLogMode(x=False, y=True)
+                  self.plot.getAxis('left').logFilter = 0.1
+            else:
+                  self.plot.setLogMode(x=False, y=False)
+                  self.plot.getAxis('left').logFilter = 0.1
+
+            #self.plot.getAxis("left").setScale(scale="log")
             #adjust the range of the plot based on the user input
             self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
 
@@ -148,10 +157,7 @@ class Plotter(QWidget):
                   self.plot.addItem(self.peak2_line_upper)
             self.peak2_line_upper.setPos(user_entries.upper_peak2)
 
-            if acquisition_parameters.get_plot_scale() == "log":
-                  self.plot.setLogMode(y=True)
-            else:
-                  self.plot.setLogMode(y=False)
+
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
