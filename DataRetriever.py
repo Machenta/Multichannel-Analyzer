@@ -29,6 +29,8 @@ class DataRetriever:
                                                             self.acquisition_parameters.get_savefile_format())
 
 
+
+
       def prepare_acquisition(self, 
                               acquisition_parameters : AcquisitionParameters):
             #update the acquisition parameters 
@@ -124,7 +126,7 @@ class DataRetriever:
                   #reset the running_acquisition flag
                   acquisition_parameters.set_acquisition_running(False)
                   sleep(0.1)
-            
+
 
       def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
             #getting multiple acquisitions is just a loop of get_one_full_acquisition
@@ -139,7 +141,7 @@ class DataRetriever:
                                     #start the acquisition for the number of times specified
                                     # we need to reset the running_acquisition flag to true
                                     print("Starting acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + str(acquisition_parameters.get_n_acquisitions()))
-                                    
+
                                     self.get_one_full_acquisition(lock , acquisition_parameters)
                                     #update the current acquisition number
                                     n += 1

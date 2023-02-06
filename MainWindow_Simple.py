@@ -369,10 +369,12 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
 
             acq_params.set_n_acquisitions(1)
             acq_params.set_t_acquisition(9999999999999999999999999)
-
+            
+      @QtCore.pyqtSlot()
       def closeEvent(self, event):
             #update the acquisition parameters with the new values
-            
+            self.quit_application()
+            event.accept()
             print("close event")
             super().closeEvent(event)
 

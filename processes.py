@@ -49,7 +49,7 @@ def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParamete
 
       data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
 
-def quit_application():
+def quit_application(*args, **kwargs):
       # Perform any necessary cleanup tasks here
 
       for process in multiprocessing.active_children():
@@ -60,6 +60,8 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       app = QApplication(sys.argv)
       window = MainWindow(acquisition_parameters)
       window.show()
+      window.closeEvent = (quit_application)
+      #window.windowClosed.connect(quit_application)
       def check_window_open():
             if window.isVisible():
                   #print("window open")
