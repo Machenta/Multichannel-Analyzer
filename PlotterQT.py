@@ -45,7 +45,7 @@ class Plotter(QWidget):
             
 
             #we create the plot
-            self.plot = pg.plot()
+            self.plot = pg.PlotItem()
             self.plot.setMouseEnabled(x=False, y=False)
             #self.plot.setInteraction(None)
             #self.plot.addLegend()
@@ -55,26 +55,34 @@ class Plotter(QWidget):
             self.x_label=self.plot.setLabel('bottom', 'Channel', color='b', **{'font-size':'12pt', 'font-weight':'bold'})
             #self.x_label.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
             self.plot.setXRange(0,self.n_channels)
-            self.plot.setYRange(0,10)
+            self.plot.setYRange(-3,10)
             #self.plot.setInteraction(pan=False)
 
             # plot
-            self.c1= pg.PlotCurveItem(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum')
+            self.c1= pg.PlotCurveItem(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum',setFillLevel=0)
+            self.c2 = pg.PlotCurveItem(x, y, pen='r', symbol='o', symbolPen='r', symbolBrush=0.2, name='blue')
             #self.c1 = self.plot.plot(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum')
             #c2 = self.plot.plot(x, y2, pen='r', symbol='o', symbolPen='r', symbolBrush=0.2, name='blue')
             self.plot.addItem(self.c1)
             #set customizations
-            self.plot.setBackground('w')
             self.plot.showGrid(x=True,y=True)
             pen = pg.mkPen(color=(255, 0, 0))
             pen.setWidth(3)
 
             self.c1.setPen(pen)
             #c2.setPen(pen)
+            #create plotWidget
+            #self.plotWidget = pg.PlotWidget()
+            #add plot to plotWidget
+            #self.plotWidget.setCentralItem(self.plot)
+
 
             # Add the plot to a layout
             layout = QVBoxLayout()
-            layout.addWidget(self.plot)
+            self.plotWidget = pg.PlotWidget()
+            self.plotWidget.setCentralItem(self.plot)
+            self.plotWidget.setBackground('w')
+            layout.addWidget(self.plotWidget)
             self.setLayout(layout)
             
             
@@ -119,78 +127,97 @@ class Plotter(QWidget):
 
             #self.plot.getAxis("left").setScale(scale="log")
             #adjust the range of the plot based on the user input
-            self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
+            #if both are numbers, then we set the range
+            if isinstance(user_entries.plot_min, int) and isinstance(user_entries.plot_max, int):
+                  self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
+            #if only one is a number, then we set the range to that number
+            elif isinstance(user_entries.plot_min, int):
+                  self.plot.setXRange(user_entries.plot_min, self.n_channels)
+            elif isinstance(user_entries.plot_max, int):
+                  self.plot.setXRange(0, user_entries.plot_max)
+            #if neither are numbers, then we set the range to the default
+            else:
+                  self.plot.setXRange(0, self.n_channels)
+            
 
-            #first we remove all other lines from the plot
-            # Remove previous vertical lines
-            #now we add the threshold line
-            #self.plot.infineLine(x=acquisition_parameters.get_threshold(), pen='r', name='Threshold')
-            #now we add the cursor line
-            #self.plot.addLine(x=user_entries.channel_select, pen='g', name='Cursor')
             if not hasattr(self, 'cursor_line'):
                   self.cursor_line = pg.InfiniteLine(angle=90, pen='blue', movable=True, name='Cursor', label='Cursor', labelOpts={'position':0.95, 'color':(255,255,255,200), 'fill':(0,0,255,100)})
                   self.plot.addItem(self.cursor_line)
                   #account for the fact that the cursor line is movable and set the channel accordingly
                   self.cursor_line.sigPositionChangeFinished.connect(lambda: self.cursor_line_moved(user_entries))
+
+                  #update the acquisition parameters with the current channel
+                  acquisition_parameters.set_selected_channel(user_entries.channel_select)
+                  #update the channel counts
+                  acquisition_parameters.set_selected_channel_counts(self.y_temp[user_entries.channel_select])
+
             self.cursor_line.setPos(user_entries.channel_select)
             #account for the fact that the cursor line is movable and set the channel accordingly
             self.cursor_line.sigPositionChangeFinished.connect(lambda: self.cursor_line_moved(user_entries))
+
+            #update the acquisition parameters with the current channel
+            acquisition_parameters.set_selected_channel(user_entries.channel_select)
+            #update the channel counts
+            acquisition_parameters.set_selected_channel_counts(self.y_temp[user_entries.channel_select])
 
             if not hasattr(self, 'threshold_line'):
                   self.threshold_line = pg.InfiniteLine(angle=90, pen='red', movable=True, name='Threshold', label='Threshold', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(255,0,0,100)})
                   self.plot.addItem(self.threshold_line)
                   #account for the fact that the threshold line is movable and set the threshold value accordingly
                   self.threshold_line.sigPositionChangeFinished.connect(lambda: self.threshold_line_moved(user_entries))
+                  #update the acquisition parameters with the current threshold
+                  acquisition_parameters.set_threshold(user_entries.threshold)
+
+            #update the acquisition parameters with the current threshold
+            acquisition_parameters.set_threshold(user_entries.threshold)
+
             self.threshold_line.setPos(user_entries.threshold)
             #account for the fact that the threshold line is movable and set the threshold value accordingly
             self.threshold_line.sigPositionChangeFinished.connect(lambda: self.threshold_line_moved(user_entries))
 
-            #draw the lines for the peaks
-            if not hasattr(self, 'peak1_line_lower'):
-                  self.peak1_line_lower = pg.InfiniteLine(angle=90, pen='green', movable=False, name='Peak1_lower', label='Peak1_lower', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
-                  self.plot.addItem(self.peak1_line_lower)
-            self.peak1_line_lower.setPos(user_entries.lower_peak1)
+            #create a linear region item to highlight the peak
+            if not hasattr(self, 'peak_region1'):
+                  self.peak_region1 = pg.LinearRegionItem([user_entries.lower_peak1, user_entries.upper_peak1], pen=(247, 213, 149, 1), brush=(247, 213, 149, 100), movable=True, )
+                  self.plot.addItem(self.peak_region1)
+                  #label the region
+                  self.peak_region_label = pg.TextItem(text='Peak1', color="black", anchor=(0.5,0.5))
+                  self.peak_region_label.setPos(user_entries.lower_peak1, 1.1*max(self.y_temp)+6)
+                  self.plot.addItem(self.peak_region_label)
+                  #account for the fact that the region is movable and set the peak accordingly
+            else:
+                  self.peak_region1.setRegion([user_entries.lower_peak1, user_entries.upper_peak1])
+                  self.peak_region_label.setPos((user_entries.lower_peak1+user_entries.upper_peak1)/2, 1.1*max(self.y_temp)+6)
 
-            if not hasattr(self, 'peak1_line_upper'):
-                  self.peak1_line_upper = pg.InfiniteLine(angle=90, pen='green', movable=False, name='Peak1_upper', label='Peak1_upper', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
-                  self.plot.addItem(self.peak1_line_upper)
-            self.peak1_line_upper.setPos(user_entries.upper_peak1)
+            #create a linear region item to highlight the peak
+            if not hasattr(self, 'peak_region2'):
+                  self.peak_region2 = pg.LinearRegionItem([user_entries.lower_peak2, user_entries.upper_peak2], pen=(171,219,227,100), brush=(171,219,227,100), movable=True)
+                  self.plot.addItem(self.peak_region2)
+                  #label the region
+                  self.peak_region_label2 = pg.TextItem(text='Peak2', color="black", anchor=(0.5,0.5))
+                  self.peak_region_label2.setPos(user_entries.lower_peak2, 1.1*max(self.y_temp)+6)
+                  self.plot.addItem(self.peak_region_label2)
+                  #account for the fact that the region is movable and set the peak accordingly
+            else:
+                  self.peak_region2.setRegion([user_entries.lower_peak2, user_entries.upper_peak2])
+                  self.peak_region_label2.setPos((user_entries.lower_peak2+user_entries.upper_peak2)/2, 1.1*max(self.y_temp)+6)
 
-            if not hasattr(self, 'peak2_line_lower'):
-                  self.peak2_line_lower = pg.InfiniteLine(angle=90, pen='purple', movable=False, name='Peak2_lower', label='Peak2_lower', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
-                  self.plot.addItem(self.peak2_line_lower)
-            self.peak2_line_lower.setPos(user_entries.lower_peak2)
-
-            if not hasattr(self, 'peak2_line_upper'):
-                  self.peak2_line_upper = pg.InfiniteLine(angle=90, pen='purple', movable=False, name='Peak2_upper', label='Peak2_upper', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
-                  self.plot.addItem(self.peak2_line_upper)
-            self.peak2_line_upper.setPos(user_entries.upper_peak2)
-
-            #fill between the peak lines
-            if not hasattr(self, 'peak1_fill'):
-                  self.peak1_fill = pg.FillBetweenItem(self.peak1_line_lower, self.peak1_line_upper, brush=(0,255,0,100))
-                  self.plot.addItem(self.peak1_fill)
-                  
-            if not hasattr(self, 'peak2_fill'):
-                  self.peak2_fill = pg.FillBetweenItem(self.peak2_line_lower, self.peak2_line_upper, brush=(255,0,255,100))
-                  self.plot.addItem(self.peak2_fill)
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
 
       def set_lin_log_scale(self, acquisition_parameters : AcquisitionParameters):
-            if acquisition_parameters.get_plot_scale == True:
-                  self.plot.setLogMode(x= False, y=True, min=0)
+            if acquisition_parameters.get_plot_scale() == True:
+                  self.plot.setLogMode(x= False, y=True)
             else:
-                  self.plot.setLogMode(x= False, y=False, min=0)
+                  self.plot.setLogMode(x= False, y=False)
 
       def get_point(self):
             return self.cursor_line.getPos()
 
 
       def cursor_line_moved(self, user_entries : UserEntries):
-            user_entries.channel_select = self.cursor_line.getPos()[0]
+            user_entries.channel_select = int(self.cursor_line.getPos()[0])
 
       def threshold_line_moved(self, user_entries : UserEntries):
-            user_entries.threshold = self.threshold_line.getPos()[0]
+            user_entries.threshold = int(self.threshold_line.getPos()[0])
 

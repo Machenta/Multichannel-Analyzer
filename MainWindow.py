@@ -228,7 +228,10 @@ class MainWindow(uiclass, baseclass):
             self.total_counts.setText(str(acq_params.get_total_counts()))
             cr= (acq_params.get_total_counts() / (acq_params.get_live_time()+0.00001))
             self.count_rate.setText(str(round(cr,2)))
+
             #self.threshold_entry.setText(str(acq_params.get_threshold()))
+
+            self.channel_select_counts.setText(str(acq_params.get_selected_channel_counts()))
 
             #print("cr", cr)
       
@@ -328,7 +331,10 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
 
             #set default values for the QLineEdits
             self.n_acquisitions_entry.setText(str(acq_params.get_n_acquisitions()))
-            self.t_acquisition_entry.setText(str(acq_params.get_t_acquisition()))
+            if acq_params.get_t_acquisition() != 9999999999999999999999999:
+                  self.t_acquisition_entry.setText(str(acq_params.get_t_acquisition()))
+            else:
+                  self.t_acquisition_entry.setText("infinite")
             self.default_filename_entry.setText(str(acq_params.get_default_filename()))
             self.directory_entry.setText(str(acq_params.get_acquisition_filesave_directory()))
 
@@ -405,6 +411,8 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
 
             acq_params.set_n_acquisitions(1)
             acq_params.set_t_acquisition(9999999999999999999999999)
+            #substitute the t_acquisition label of the main window with "infinite"
+            self.t_acquisition_entry.setText("infinite")
             
       def closeEvent(self, event):
             #update the acquisition parameters with the new values
