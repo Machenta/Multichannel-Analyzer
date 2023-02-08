@@ -31,6 +31,8 @@ class AcquisitionParameters:
             self.restart : bool = False
             self.total_counts : int = 0
             self.window_is_open : bool = False
+            self.selected_channel : int = 0
+            self.selected_channel_counts : int = 0
 
 
             #self.create_dict
@@ -211,6 +213,18 @@ class AcquisitionParameters:
       
       def set_window_is_open(self, value : bool):
             self.window_is_open = value
+
+      def get_selected_channel(self):
+            return self.selected_channel
+
+      def set_selected_channel(self, value : int):
+            self.selected_channel = value
+
+      def get_selected_channel_counts(self):
+            return self.selected_channel_counts
+      
+      def set_selected_channel_counts(self, value : int):
+            self.selected_channel_counts = value
 
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),
