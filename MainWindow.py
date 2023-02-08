@@ -235,24 +235,60 @@ class MainWindow(uiclass, baseclass):
 
       def update_peak_counts(self, acq_params : AcquisitionParameters):
             #calculate the peak counts for the entire peak based on the user entries for the upper and lower limits
+            #only calculate the peak counts if the acquisition is running and the user has entered values for the upper and lower limits
+            if acq_params.get_acquisition_running() and self.user_entries.lower_peak1 != 0 and self.user_entries.upper_peak1 != 0:      
+                  #calculate the peak counts for the first peak
+                  #sum the counts in the first peak
+                  total_counts_peak1 = 0
 
-            #calculate the peak counts for the first peak
-            #sum the counts in the first peak
-            total_counts_peak1 = 0
-            for i in range(self.user_entries.lower_peak1, self.user_entries.upper_peak1):
-                  total_counts_peak1 += acq_params.get_current_acq_channel(i)
+                  #creating linear regression model for background subtraction
+                  x = np.array([self.user_entries.lower_peak1, self.user_entries.upper_peak1])
+                  y = np.array([acq_params.get_current_acq_channel(self.user_entries.lower_peak1), acq_params.get_current_acq_channel(self.user_entries.upper_peak1)])
+                  m, b = np.polyfit(x, y, 1)
+                  #print("m", m)
+                  #print("b", b)
 
-            #set the label for the first peak
-            self.counts1.setText(str(total_counts_peak1))
+                  #subtracting the background from the peak
 
-            #calculate the peak counts for the second peak
-            #sum the counts in the second peak
-            total_counts_peak2 = 0
-            for i in range(self.user_entries.lower_peak2, self.user_entries.upper_peak2):
-                  total_counts_peak2 += acq_params.get_current_acq_channel(i)
+                  #getting total counts
+                  for i in range(self.user_entries.lower_peak1, self.user_entries.upper_peak1):
+                        total_counts_peak1 += acq_params.get_current_acq_channel(i)
 
-            #set the label for the second peak
-            self.counts2.setText(str(total_counts_peak2))
+                  #subtracting the background
+                  total_counts_peak1 -= (m * (self.user_entries.upper_peak1 - self.user_entries.lower_peak1) + b)
+
+
+                  #set the label for the first peak
+                  self.counts1.setText(str(int(total_counts_peak1)))
+            #if the user has not entered values for the upper and lower limits, set the label to "N/A"
+            else:
+                  self.counts1.setText("N/A")
+
+            #do the same for the second peak
+            if acq_params.get_acquisition_running() and self.user_entries.lower_peak2 != 0 and self.user_entries.upper_peak2 != 0:
+                  #calculate the peak counts for the second peak
+                  #sum the counts in the second peak
+                  total_counts_peak2 = 0
+
+                  #creating linear regression model for background subtraction
+                  x = np.array([self.user_entries.lower_peak2, self.user_entries.upper_peak2])
+                  y = np.array([acq_params.get_current_acq_channel(self.user_entries.lower_peak2), acq_params.get_current_acq_channel(self.user_entries.upper_peak2)])
+                  m, b = np.polyfit(x, y, 1)
+                  #print("m", m)
+                  #print("b", b)
+
+                  #subtracting the background from the peak
+                  for i in range(self.user_entries.lower_peak2, self.user_entries.upper_peak2):
+                        total_counts_peak2 += acq_params.get_current_acq_channel(i)
+
+                  #subtracting the background
+                  total_counts_peak2 -= (m * (self.user_entries.upper_peak2 - self.user_entries.lower_peak2) + b)
+
+                  #set the label for the second peak
+                  self.counts2.setText(str(int(total_counts_peak2)))
+            #if the user has not entered values for the upper and lower limits, set the label to "N/A"
+            else:
+                  self.counts2.setText("N/A")
             
 
       def update_window(self, acq_params : AcquisitionParameters):
@@ -370,7 +406,6 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
             acq_params.set_n_acquisitions(1)
             acq_params.set_t_acquisition(9999999999999999999999999)
             
-      @QtCore.pyqtSlot()
       def closeEvent(self, event):
             #update the acquisition parameters with the new values
             self.quit_application()

@@ -21,7 +21,7 @@ from matplotlib.figure import Figure
 from AcquisitionParams import * 
 import ArduinoV2 as device
 from DataRetriever import *
-from MainWindow_Simple import *
+from MainWindow import *
 
 
 
@@ -78,7 +78,7 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
                   window.populate_metrics_grid(acquisition_parameters)
                   window.update_peak_counts(acquisition_parameters)
 
-      QTimer.singleShot(10, check_window_open)
+      QTimer.singleShot(1, check_window_open)
       print("Window is closed")
 
       signal = AppSignal()

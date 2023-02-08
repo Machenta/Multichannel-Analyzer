@@ -37,7 +37,7 @@
       <rect>
        <x>0</x>
        <y>0</y>
-       <width>81</width>
+       <width>101</width>
        <height>41</height>
       </rect>
      </property>
@@ -48,7 +48,7 @@
     <widget class="QPushButton" name="stop_button">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>100</x>
        <y>0</y>
        <width>81</width>
        <height>41</height>
@@ -77,9 +77,9 @@
     <widget class="QPushButton" name="lin_log_button">
      <property name="geometry">
       <rect>
-       <x>160</x>
+       <x>180</x>
        <y>0</y>
-       <width>101</width>
+       <width>121</width>
        <height>41</height>
       </rect>
      </property>
@@ -126,8 +126,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -146,8 +146,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -187,8 +187,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -228,8 +228,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -269,8 +269,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -310,8 +310,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -351,8 +351,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -413,8 +413,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -433,8 +433,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">
@@ -495,8 +495,8 @@
        <property name="font">
         <font>
          <pointsize>13</pointsize>
-         <weight>50</weight>
-         <bold>false</bold>
+         <weight>75</weight>
+         <bold>true</bold>
         </font>
        </property>
        <property name="text">

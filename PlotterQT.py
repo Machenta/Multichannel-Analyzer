@@ -46,6 +46,8 @@ class Plotter(QWidget):
 
             #we create the plot
             self.plot = pg.plot()
+            self.plot.setMouseEnabled(x=False, y=False)
+            #self.plot.setInteraction(None)
             #self.plot.addLegend()
             # set properies
             self.y_label= self.plot.setLabel('left', 'Counts', color='b', **{'font-size':'12pt', 'font-weight':'bold'})
@@ -121,7 +123,6 @@ class Plotter(QWidget):
 
             #first we remove all other lines from the plot
             # Remove previous vertical lines
-            lines_to_remove = []
             #now we add the threshold line
             #self.plot.infineLine(x=acquisition_parameters.get_threshold(), pen='r', name='Threshold')
             #now we add the cursor line
@@ -129,12 +130,20 @@ class Plotter(QWidget):
             if not hasattr(self, 'cursor_line'):
                   self.cursor_line = pg.InfiniteLine(angle=90, pen='blue', movable=True, name='Cursor', label='Cursor', labelOpts={'position':0.95, 'color':(255,255,255,200), 'fill':(0,0,255,100)})
                   self.plot.addItem(self.cursor_line)
+                  #account for the fact that the cursor line is movable and set the channel accordingly
+                  self.cursor_line.sigPositionChangeFinished.connect(lambda: self.cursor_line_moved(user_entries))
             self.cursor_line.setPos(user_entries.channel_select)
+            #account for the fact that the cursor line is movable and set the channel accordingly
+            self.cursor_line.sigPositionChangeFinished.connect(lambda: self.cursor_line_moved(user_entries))
 
             if not hasattr(self, 'threshold_line'):
                   self.threshold_line = pg.InfiniteLine(angle=90, pen='red', movable=True, name='Threshold', label='Threshold', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(255,0,0,100)})
                   self.plot.addItem(self.threshold_line)
+                  #account for the fact that the threshold line is movable and set the threshold value accordingly
+                  self.threshold_line.sigPositionChangeFinished.connect(lambda: self.threshold_line_moved(user_entries))
             self.threshold_line.setPos(user_entries.threshold)
+            #account for the fact that the threshold line is movable and set the threshold value accordingly
+            self.threshold_line.sigPositionChangeFinished.connect(lambda: self.threshold_line_moved(user_entries))
 
             #draw the lines for the peaks
             if not hasattr(self, 'peak1_line_lower'):
@@ -148,16 +157,23 @@ class Plotter(QWidget):
             self.peak1_line_upper.setPos(user_entries.upper_peak1)
 
             if not hasattr(self, 'peak2_line_lower'):
-                  self.peak2_line_lower = pg.InfiniteLine(angle=90, pen='green', movable=False, name='Peak2_lower', label='Peak2_lower', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
+                  self.peak2_line_lower = pg.InfiniteLine(angle=90, pen='purple', movable=False, name='Peak2_lower', label='Peak2_lower', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
                   self.plot.addItem(self.peak2_line_lower)
             self.peak2_line_lower.setPos(user_entries.lower_peak2)
 
             if not hasattr(self, 'peak2_line_upper'):
-                  self.peak2_line_upper = pg.InfiniteLine(angle=90, pen='green', movable=False, name='Peak2_upper', label='Peak2_upper', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
+                  self.peak2_line_upper = pg.InfiniteLine(angle=90, pen='purple', movable=False, name='Peak2_upper', label='Peak2_upper', labelOpts={'position':0.9, 'color':(255,255,255,200), 'fill':(0,255,0,100)})
                   self.plot.addItem(self.peak2_line_upper)
             self.peak2_line_upper.setPos(user_entries.upper_peak2)
 
-
+            #fill between the peak lines
+            if not hasattr(self, 'peak1_fill'):
+                  self.peak1_fill = pg.FillBetweenItem(self.peak1_line_lower, self.peak1_line_upper, brush=(0,255,0,100))
+                  self.plot.addItem(self.peak1_fill)
+                  
+            if not hasattr(self, 'peak2_fill'):
+                  self.peak2_fill = pg.FillBetweenItem(self.peak2_line_lower, self.peak2_line_upper, brush=(255,0,255,100))
+                  self.plot.addItem(self.peak2_fill)
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
@@ -167,3 +183,14 @@ class Plotter(QWidget):
                   self.plot.setLogMode(x= False, y=True, min=0)
             else:
                   self.plot.setLogMode(x= False, y=False, min=0)
+
+      def get_point(self):
+            return self.cursor_line.getPos()
+
+
+      def cursor_line_moved(self, user_entries : UserEntries):
+            user_entries.channel_select = self.cursor_line.getPos()[0]
+
+      def threshold_line_moved(self, user_entries : UserEntries):
+            user_entries.threshold = self.threshold_line.getPos()[0]
+
