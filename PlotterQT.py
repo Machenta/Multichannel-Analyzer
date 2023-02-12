@@ -3,6 +3,7 @@ import pyqtgraph as pg
 import pyqtgraph.exporters
 import numpy as np
 from datetime import datetime as dt
+import time
 #import matplotlib.pyplot as plt
 import tkinter as tk
 from dataclasses import dataclass, field
@@ -96,15 +97,15 @@ class Plotter(QWidget):
             threshold = acquisition_parameters.get_threshold()
             if acquisition_parameters.get_clear_plot() == True:
                   for key in range(self.n_channels):
-                        acquisition_parameters.set_current_acq_channel(key, 0)
+                        acquisition_parameters.set_current_acq_channel(key, 0.01)
                         #print(acquisition_parameters.get_current_acq_channel(key))
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(acquisition_parameters.get_n_channels())]
+                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(acquisition_parameters.get_n_channels())]
                   #since we have cleared the plot, we have to set the clear plot flag to false
                   acquisition_parameters.set_clear_plot(False)
             else:
                   #print(acquisition_parameters.get_current_acq_channel(100))
                   #print(acquisition_parameters.get_current_acq())
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i) if i >= threshold else 0 for i in range(acquisition_parameters.get_n_channels())]
+                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(acquisition_parameters.get_n_channels())]
 
 
             #print("y_temp: " + str(self.y_temp))
@@ -112,32 +113,39 @@ class Plotter(QWidget):
       def redraw_plot(self, acquisition_parameters : AcquisitionParameters, user_entries : UserEntries):
             #now we take the y_temp that we have updated and we plot it
             #along with all other elements such as threshold line and cursor line
+            #time the update of the plot
+            #start_time = time.time()
+
 
             self.update_y_data(acquisition_parameters)
             #now we update the plot with the new data
             self.c1.setData(y= self.y_temp)
             self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
             #self.plot.getAxis("left").setLimits(min=0.01, max=1.1*max(self.y_temp)+10)
+            #print data to console
+            print("y_temp: " + str(self.y_temp))
+            
             if acquisition_parameters.get_plot_scale() == "log":
-                  self.plot.setLogMode(x=False, y=True)
-                  self.plot.getAxis('left').logFilter = 0.1
+                self.plot.setLogMode(x=False, y=True)
+                self.plot.getAxis('left').logFilter = 0.1
             else:
-                  self.plot.setLogMode(x=False, y=False)
-                  self.plot.getAxis('left').logFilter = 0.1
+                self.plot.setLogMode(x=False, y=False)
 
             #self.plot.getAxis("left").setScale(scale="log")
             #adjust the range of the plot based on the user input
-            #if both are numbers, then we set the range
-            if isinstance(user_entries.plot_min, int) and isinstance(user_entries.plot_max, int):
-                  self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
-            #if only one is a number, then we set the range to that number
-            elif isinstance(user_entries.plot_min, int):
-                  self.plot.setXRange(user_entries.plot_min, self.n_channels)
-            elif isinstance(user_entries.plot_max, int):
-                  self.plot.setXRange(0, user_entries.plot_max)
-            #if neither are numbers, then we set the range to the default
-            else:
-                  self.plot.setXRange(0, self.n_channels)
+            #if either of the entries result in ValueError, we set the range to the default
+            try:
+      
+                  #if the entries are the same we set the range to the default
+                  if user_entries.plot_min == user_entries.plot_max:
+                        self.plot.setXRange(0, self.n_channels)
+                        #update the user entries with the new range
+                        user_entries.plot_min = 0
+                        user_entries.plot_max = self.n_channels
+                  else:
+                        self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
+            except ValueError:
+                  self.plot.setXRange(0, 512)
             
 
             if not hasattr(self, 'cursor_line'):
@@ -180,7 +188,7 @@ class Plotter(QWidget):
                   self.peak_region1 = pg.LinearRegionItem([user_entries.lower_peak1, user_entries.upper_peak1], pen=(247, 213, 149, 1), brush=(247, 213, 149, 100), movable=True, )
                   self.plot.addItem(self.peak_region1)
                   #label the region
-                  self.peak_region_label = pg.TextItem(text='Peak1', color="black", anchor=(0.5,0.5))
+                  self.peak_region_label = pg.TextItem(text='Peak 1', color="black", anchor=(0.5,0.5))
                   self.peak_region_label.setPos(user_entries.lower_peak1, 1.1*max(self.y_temp)+6)
                   self.plot.addItem(self.peak_region_label)
                   #account for the fact that the region is movable and set the peak accordingly
@@ -193,7 +201,7 @@ class Plotter(QWidget):
                   self.peak_region2 = pg.LinearRegionItem([user_entries.lower_peak2, user_entries.upper_peak2], pen=(171,219,227,100), brush=(171,219,227,100), movable=True)
                   self.plot.addItem(self.peak_region2)
                   #label the region
-                  self.peak_region_label2 = pg.TextItem(text='Peak2', color="black", anchor=(0.5,0.5))
+                  self.peak_region_label2 = pg.TextItem(text='Peak 2', color="black", anchor=(0.5,0.5))
                   self.peak_region_label2.setPos(user_entries.lower_peak2, 1.1*max(self.y_temp)+6)
                   self.plot.addItem(self.peak_region_label2)
                   #account for the fact that the region is movable and set the peak accordingly
@@ -204,12 +212,8 @@ class Plotter(QWidget):
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
-
-      def set_lin_log_scale(self, acquisition_parameters : AcquisitionParameters):
-            if acquisition_parameters.get_plot_scale() == True:
-                  self.plot.setLogMode(x= False, y=True)
-            else:
-                  self.plot.setLogMode(x= False, y=False)
+            #t_end = time.time()
+            #print(f"Time to update plot: {t_end-start_time}")
 
       def get_point(self):
             return self.cursor_line.getPos()
