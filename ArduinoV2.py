@@ -40,7 +40,7 @@ class Arduino:
         #val = float(self.ser.readline().decode("utf-8").strip())
         #get a random number according to a guassian distribution mean 5 standard deviation 1
         val = random.randint(0, self.channels-1)
-        time.sleep(0.1)
+        time.sleep(0.00001)
         return val
 
  

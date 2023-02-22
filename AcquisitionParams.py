@@ -226,6 +226,15 @@ class AcquisitionParameters:
       def set_selected_channel_counts(self, value : int):
             self.selected_channel_counts = value
 
+      def update_for_single_pass(self, live_time : float, t_total_acq : float, val : int):
+            if val != 0:
+                  self.total_counts += 1
+            
+            self.live_time = live_time
+            self.current_acq_duration = t_total_acq
+            
+
+
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),
                   "Number of Acquisitions: " + str(self.n_acquisitions),

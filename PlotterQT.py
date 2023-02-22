@@ -123,7 +123,7 @@ class Plotter(QWidget):
             self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
             #self.plot.getAxis("left").setLimits(min=0.01, max=1.1*max(self.y_temp)+10)
             #print data to console
-            print("y_temp: " + str(self.y_temp))
+            #print("y_temp: " + str(self.y_temp))
             
             if acquisition_parameters.get_plot_scale() == "log":
                 self.plot.setLogMode(x=False, y=True)
