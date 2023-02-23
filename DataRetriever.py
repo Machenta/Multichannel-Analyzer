@@ -142,9 +142,9 @@ class DataRetriever:
                               val = self.get_data()
                               #update the current acquisition with the new data
                               #acquisition_parameters.current_acq[int(val)] = val
-                              acquisition_parameters.update_current_acq_channel(int(val))
+                              acquisition_parameters.update_current_acq_channel(val)
                               #save the data
-                              #print("Data: " + str(val))
+                              print("Data: " + str(val))
 
                               #get the time at the end of the acquisition
                               t_end = perf_counter()

@@ -101,9 +101,9 @@ if __name__ == "__main__":
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
 
-      managed_acquisition_parameters.set_t_acquisition(40)
+      managed_acquisition_parameters.set_t_acquisition(400)
       managed_acquisition_parameters.set_n_acquisitions(2)
-      managed_acquisition_parameters.set_n_channels(512) 
+      managed_acquisition_parameters.set_n_channels(1024) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
 
       #create the acquisition parameters

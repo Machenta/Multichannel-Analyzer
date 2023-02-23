@@ -26,7 +26,7 @@ class UserEntries():
             self.lower_peak2 : int = 0
             self.upper_peak2 : int = 0
             self.plot_min : int = 0
-            self.plot_max : int = 512
+            self.plot_max : int = 1024
             self.channel_select : int = 0
             self.threshold : int = 0
 

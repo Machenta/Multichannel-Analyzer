@@ -6,7 +6,7 @@ import csv
 class AcquisitionParameters:
       def __init__(self, n_acquisitions : int = 1, t_acquisition : float = 5):
             self.acquisition_running : bool = False
-            self.n_channels : int = 512
+            self.n_channels : int = 1024
             self.arduino_port : str = "COM3"
             self.baud : int = 9600
             self.n_acquisitions : int = n_acquisitions
@@ -166,8 +166,7 @@ class AcquisitionParameters:
             self.current_acq[int(channel)] = value
 
       def update_current_acq_channel(self, channel : int):
-            self.current_acq[int(channel)] +=1   
-
+            self.current_acq[channel] +=1   
 
       def get_start_time(self):
             return self.start_time
