@@ -38,23 +38,25 @@ class Arduino:
 
     def read_serial(self):
         #val = int(self.ser.readline().decode("utf-8").strip())
-        ##get only the last number in the string
-        ##get a random number according to a guassian distribution mean 5 standard deviation 1
-        ##val = random.randint(0, self.channels-1)
-        #print(val)
+        #get only the last number in the string
+        #get a random number according to a guassian distribution mean 5 standard deviation 1
+        val = random.randint(0, self.channels-1)
+        print(val)
         #print(type(val))
-        #time.sleep(0.00001)
-        #return val
-        #self.ser.timeout = 0.01
-        line = self.ser.readline().decode("utf-8").strip()
-        if line:
-            try:
-                val = int(line)
-                #print(str(val) + str(type(val)))
-                #print(type(val))
-                return val
-            except ValueError:
-                pass
+        j=0
+        for i in range(10):
+            j+=1
+        return val
+        
+        #line = self.ser.readline().decode("utf-8").strip()
+        #if line:
+        #    try:
+        #        val = int(line)
+        #        #print(str(val) + str(type(val)))
+        #        #print(type(val))
+        #        return val
+        #    except ValueError:
+        #        pass
  
     
     def prepare_acquisition(self):

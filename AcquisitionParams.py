@@ -93,7 +93,7 @@ class AcquisitionParameters:
       def get_current_act_start_time(self):
             return self.current_act_start_time
       
-      def set_current_act_start_time(self, value):
+      def set_current_act_start_time(self, value : float ):
             self.current_act_start_time = value
 
       def get_dir_path(self):
@@ -232,7 +232,9 @@ class AcquisitionParameters:
             self.live_time = live_time
             self.current_acq_duration = t_total_acq
             
-
+      def update_run_time_and_status(self, run_time : float, status : str):
+            self.current_acq_duration = run_time
+            self.acquisition_running = status
 
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),
@@ -272,3 +274,4 @@ class AcquisitionParameters:
       def clear_data_current_acq(self):
             for key in range(self.n_channels):
                   self.current_acq[key] = 0
+
