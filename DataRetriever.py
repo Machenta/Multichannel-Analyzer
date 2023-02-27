@@ -5,6 +5,8 @@ import datetime as dt
 from time import sleep, time, perf_counter, perf_counter_ns
 import multiprocessing
 
+from Timer import *
+
 class DataRetriever: 
       def __init__(self, 
                   device : device.Arduino, 
@@ -115,19 +117,6 @@ class DataRetriever:
                    #reset the current live time on the acquisition parameters
                   acquisition_parameters.set_live_time(0) 
                   #run the acquisition for the preset time
-
-                  #spin up two processes to run the acquisition and save the data at the same time
-                  #p1 = multiprocessing.Process(target=self.get_value_from_device, args=(acquisition_parameters,))
-                  #p2 = multiprocessing.Process(target=self.save_params, args=(acquisition_parameters,))
-#
-                  ##start the processes
-                  #p1.start()
-                  #p2.start()
-#
-                  ##join the processes
-#
-                  #p1.join()
-                  #p2.join()
 
                   while (t_total_acq) < acquisition_parameters.get_t_acquisition():
                         while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < acquisition_parameters.get_t_acquisition():

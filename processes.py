@@ -87,7 +87,7 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       app.aboutToQuit.connect(quit_application)
       sys.exit(app.exec()) 
 
-def run_timer(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+#def run_timer(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
      #this is the timer that will be used to update the plot and keep track of acquisition times 
      
 
