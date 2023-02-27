@@ -226,7 +226,7 @@ class MainWindow(uiclass, baseclass):
             self.time_elapsed.setText(str(round(acq_params.get_current_acq_duration(),4)))
             self.live_time.setText(str(round(acq_params.get_live_time() ,4)))
             self.total_counts.setText(str(acq_params.get_total_counts()))
-            cr= (acq_params.get_total_counts() / (acq_params.get_live_time()+0.00001))
+            cr= acq_params.get_count_rate()
             self.count_rate.setText(str(round(cr,2)))
 
             #self.threshold_entry.setText(str(acq_params.get_threshold()))

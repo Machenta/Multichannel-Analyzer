@@ -22,7 +22,7 @@ from AcquisitionParams import *
 import ArduinoV2 as device
 from DataRetriever import *
 from MainWindow import *
-
+from Timer import *
 
 
 
@@ -40,14 +40,14 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
     return x_val1
 
 
-def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters, timer : Timer):
 
       dev = device.Arduino(channels=acquisition_parameters.get_n_channels())
 
       #create the data retriever
       data_retriever = DataRetriever(dev, acquisition_parameters)
 
-      data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
+      data_retriever.get_multiple_acquisitions(lock, acquisition_parameters, timer)
 
 def quit_application(*args, **kwargs):
       # Perform any necessary cleanup tasks here
@@ -87,9 +87,16 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       app.aboutToQuit.connect(quit_application)
       sys.exit(app.exec()) 
 
-#def run_timer(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
-     #this is the timer that will be used to update the plot and keep track of acquisition times 
+def run_timer(lock: multiprocessing.Lock, timer : Timer):
+      #this is the timer that will be used to update the plot and keep track of acquisition times 
      
+      #print("Inside ")
+      timer.start_timer()
+
+      while True:
+            time.sleep(0.5)
+            timer.get_current_run_time()
+            #print(timer.get_current_run_time())
 
 if __name__ == "__main__":
       #create the manager
@@ -99,6 +106,7 @@ if __name__ == "__main__":
       lock = multiprocessing.Lock()
 
       BaseManager.register('AcquisitionParameters', AcquisitionParameters)
+      BaseManager.register('Timer', Timer)
       manager = BaseManager()
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
@@ -108,13 +116,17 @@ if __name__ == "__main__":
       managed_acquisition_parameters.set_n_channels(1024) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
 
+      managed_timer = manager.Timer()
+
+
       #create the acquisition parameters
       #managed_acquisition_parameters = AcquisitionParameters(t_acquisition=5)
 
              
       #create the process
       GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
-      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters))
+      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters, managed_timer))
+      timer_process = multiprocessing.Process(target=run_timer, args=(lock, managed_timer))
       #process_main_window = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
       #create another process
       #process2 = multiprocessing.Process(target=run2, args=(lock, managed_acquisition_parameters))
@@ -124,6 +136,7 @@ if __name__ == "__main__":
       #start the process
       GUI_process.start()
       process.start()
+      timer_process.start()
       
 
 
@@ -132,3 +145,4 @@ if __name__ == "__main__":
       #metrics_process.join()
       GUI_process.join()
       process.join()
+      timer_process.join()
