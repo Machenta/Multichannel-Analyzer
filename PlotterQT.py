@@ -25,7 +25,7 @@ class UserEntries():
             self.upper_peak1 : int = 0
             self.lower_peak2 : int = 0
             self.upper_peak2 : int = 0
-            self.plot_min : int = 0
+            self.plot_min : int = 1
             self.plot_max : int = 1024
             self.channel_select : int = 0
             self.threshold : int = 0
@@ -44,39 +44,29 @@ class Plotter(QWidget):
             y = [0.01 for i in range(self.n_channels)]
             x = [i for i in range(self.n_channels)]
             
+            #defines the color and width of the line to be plotted
+            pen = pg.mkPen(color=(118,181,197))
+            pen.setWidth(3)
 
             #we create the plot
             self.plot = pg.PlotItem()
             self.plot.setMouseEnabled(x=False, y=False)
-            #self.plot.setInteraction(None)
-            #self.plot.addLegend()
             # set properies
             self.y_label= self.plot.setLabel('left', 'Counts', color='b', **{'font-size':'12pt', 'font-weight':'bold'})
             #self.y_label.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
             self.x_label=self.plot.setLabel('bottom', 'Channel', color='b', **{'font-size':'12pt', 'font-weight':'bold'})
             #self.x_label.setFont(QtGui.QFont("Times", 12, QtGui.QFont.Bold))
-            self.plot.setXRange(0,self.n_channels)
-            self.plot.setYRange(-3,10)
-            #self.plot.setInteraction(pan=False)
+            self.plot.setXRange(1,self.n_channels)
+            self.plot.setYRange(0.1,10)
+            
 
             # plot
-            self.c1= pg.PlotCurveItem(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum',setFillLevel=0)
-            self.c2 = pg.PlotCurveItem(x, y, pen='r', symbol='o', symbolPen='r', symbolBrush=0.2, name='blue')
-            #self.c1 = self.plot.plot(x, y, pen='b', symbol='x', symbolPen='b', symbolBrush=0.2, name='Spectrum')
-            #c2 = self.plot.plot(x, y2, pen='r', symbol='o', symbolPen='r', symbolBrush=0.2, name='blue')
+            self.c1= pg.PlotDataItem(x, y, name='Spectrum',setFillLevel=1)
+            self.c1.setPen(pen)
             self.plot.addItem(self.c1)
+            self.plot.setLogMode(x=False, y=True)
             #set customizations
             self.plot.showGrid(x=True,y=True)
-            pen = pg.mkPen(color=(255, 0, 0))
-            pen.setWidth(3)
-
-            self.c1.setPen(pen)
-            #c2.setPen(pen)
-            #create plotWidget
-            #self.plotWidget = pg.PlotWidget()
-            #add plot to plotWidget
-            #self.plotWidget.setCentralItem(self.plot)
-
 
             # Add the plot to a layout
             layout = QVBoxLayout()
@@ -86,26 +76,20 @@ class Plotter(QWidget):
             layout.addWidget(self.plotWidget)
             self.setLayout(layout)
             
-            
-                  
 
 
       def update_y_data(self, acquisition_parameters : AcquisitionParameters):
             #first we have to take into account if the user requested a clear plot
             #while at the same time we have to take into account if the user input a threshold
-            #print("threshold: " + str(acquisition_parameters.get_threshold()))
             threshold = acquisition_parameters.get_threshold()
             if acquisition_parameters.get_clear_plot() == True:
                   for key in range(self.n_channels):
                         acquisition_parameters.set_current_acq_channel(key, 0.01)
-                        #print(acquisition_parameters.get_current_acq_channel(key))
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(acquisition_parameters.get_n_channels())]
+                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(1, acquisition_parameters.get_n_channels())]
                   #since we have cleared the plot, we have to set the clear plot flag to false
                   acquisition_parameters.set_clear_plot(False)
             else:
-                  #print(acquisition_parameters.get_current_acq_channel(100))
-                  #print(acquisition_parameters.get_current_acq())
-                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(acquisition_parameters.get_n_channels())]
+                  self.y_temp = [acquisition_parameters.get_current_acq_channel(i)+0.01 if i >= threshold else 0.01 for i in range(1, acquisition_parameters.get_n_channels())]
 
 
             #print("y_temp: " + str(self.y_temp))
@@ -120,16 +104,18 @@ class Plotter(QWidget):
             self.update_y_data(acquisition_parameters)
             #now we update the plot with the new data
             self.c1.setData(y= self.y_temp)
-            self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
+            
             #self.plot.getAxis("left").setLimits(min=0.01, max=1.1*max(self.y_temp)+10)
             #print data to console
             #print("y_temp: " + str(self.y_temp))
             
             if acquisition_parameters.get_plot_scale() == "log":
                 self.plot.setLogMode(x=False, y=True)
-                self.plot.getAxis('left').logFilter = 0.1
+                self.plot.setYRange(np.log10(1),np.log10(2*max(self.y_temp)+10))
+                #self.plot.getAxis('left').logFilter = 0.1
             else:
                 self.plot.setLogMode(x=False, y=False)
+                self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
 
             #self.plot.getAxis("left").setScale(scale="log")
             #adjust the range of the plot based on the user input
@@ -138,14 +124,14 @@ class Plotter(QWidget):
       
                   #if the entries are the same we set the range to the default
                   if user_entries.plot_min == user_entries.plot_max:
-                        self.plot.setXRange(0, self.n_channels)
+                        self.plot.setXRange(1, self.n_channels)
                         #update the user entries with the new range
-                        user_entries.plot_min = 0
+                        user_entries.plot_min = 1
                         user_entries.plot_max = self.n_channels
                   else:
                         self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
             except ValueError:
-                  self.plot.setXRange(0, 512)
+                  self.plot.setXRange(1, 1024)
             
 
             if not hasattr(self, 'cursor_line'):

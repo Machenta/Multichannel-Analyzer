@@ -40,14 +40,14 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
     return x_val1
 
 
-def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters, timer : Timer):
+def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
 
       dev = device.Arduino(channels=acquisition_parameters.get_n_channels())
 
       #create the data retriever
       data_retriever = DataRetriever(dev, acquisition_parameters)
 
-      data_retriever.get_multiple_acquisitions(lock, acquisition_parameters, timer)
+      data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
 
 def quit_application(*args, **kwargs):
       # Perform any necessary cleanup tasks here
@@ -106,7 +106,6 @@ if __name__ == "__main__":
       lock = multiprocessing.Lock()
 
       BaseManager.register('AcquisitionParameters', AcquisitionParameters)
-      BaseManager.register('Timer', Timer)
       manager = BaseManager()
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
@@ -116,7 +115,7 @@ if __name__ == "__main__":
       managed_acquisition_parameters.set_n_channels(1024) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
 
-      managed_timer = manager.Timer()
+
 
 
       #create the acquisition parameters
@@ -125,8 +124,7 @@ if __name__ == "__main__":
              
       #create the process
       GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
-      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters, managed_timer))
-      timer_process = multiprocessing.Process(target=run_timer, args=(lock, managed_timer))
+      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters))
       #process_main_window = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
       #create another process
       #process2 = multiprocessing.Process(target=run2, args=(lock, managed_acquisition_parameters))
@@ -136,7 +134,7 @@ if __name__ == "__main__":
       #start the process
       GUI_process.start()
       process.start()
-      timer_process.start()
+      
       
 
 
@@ -145,4 +143,4 @@ if __name__ == "__main__":
       #metrics_process.join()
       GUI_process.join()
       process.join()
-      timer_process.join()
+      

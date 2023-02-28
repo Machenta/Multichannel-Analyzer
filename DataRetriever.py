@@ -103,13 +103,7 @@ class DataRetriever:
                               acquisition_parameters.update_for_single_pass(self.t_total_acq, self.t_total_acq, self.val,)
 
 
-      def sleep(duration, get_now=time.perf_counter):
-            now = get_now()
-            end = now + duration
-            while now < end:
-                  now = get_now()
-
-      def get_one_full_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters, timer : Timer):
+      def get_one_full_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
             print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
 
             #Prepare the acquisition
@@ -146,6 +140,10 @@ class DataRetriever:
 
                               run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]
 
+                              #check to see if the clear button was pressed
+                              if acquisition_parameters.get_current_acq_duration == 0:
+                                    t_total_acq = 0
+
 
                               t_iter_end = time.perf_counter_ns()
                               t_iter = (t_iter_end-t_iter_start)*1e-9
@@ -155,20 +153,21 @@ class DataRetriever:
                               
                               #print("t_total_acq=" + str(t_total_acq))
                               #print("t_iter=" + str(t_iter))
-                        run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]     
-                              
-
+                        run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]          
+                        #print("here")
+                        #print("t_total_acq=" + str(t_total_acq))
+                        #print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
                   #update the current acquisition duration with the time it took to get the data
                   acquisition_parameters.set_current_acq_duration(t_total_acq)
                   acquisition_parameters.set_live_time(live_time)
                   #save the acquisition
-                  self.save_acquisition(acquisition_parameters)        
+                  self.save_acquisition(acquisition_parameters)     
                   #reset the running_acquisition flag
                   acquisition_parameters.set_acquisition_running(False)
 
 
 
-      def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters, timer : Timer):
+      def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
             #getting multiple acquisitions is just a loop of get_one_full_acquisition
             while True:
                   while acquisition_parameters.get_window_is_open() == True:
@@ -182,7 +181,7 @@ class DataRetriever:
                                     # we need to reset the running_acquisition flag to true
                                     print("Starting acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + str(acquisition_parameters.get_n_acquisitions()))
 
-                                    self.get_one_full_acquisition(lock , acquisition_parameters, timer=timer)
+                                    self.get_one_full_acquisition(lock , acquisition_parameters)
                                     #update the current acquisition number
                                     n += 1
                                     acquisition_parameters.set_current_n(n)

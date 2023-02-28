@@ -250,6 +250,14 @@ class AcquisitionParameters:
             self.current_acq_duration = run_time
             self.acquisition_running = status
 
+      def reset_data(self):
+            self.current_acq = [0.01 for i in range(self.n_channels)]
+            self.t_acquisition = 0.0
+            self.total_counts = 0
+            self.count_rate = 0.0
+            self.current_acq_duration = 0.0
+            self.live_time = 0.0
+
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),
                   "Number of Acquisitions: " + str(self.n_acquisitions),
