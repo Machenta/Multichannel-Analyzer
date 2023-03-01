@@ -2,7 +2,6 @@ import serial
 import time
 import serial.tools.list_ports
 import random
-import serial.tools.list_ports
 
 
 #create serial object - Arduino

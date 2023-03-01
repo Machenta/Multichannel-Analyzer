@@ -26,7 +26,7 @@ class MainWindow(uiclass, baseclass):
             self.left = 50
             self.top = 50
             self.width = 1300
-            self.height = 800
+            self.height = 900
             self.title = 'MainWindow'
             self.initPlot(AcquisitionParameters = acq_params)
 
