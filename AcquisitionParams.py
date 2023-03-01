@@ -12,7 +12,7 @@ class AcquisitionParameters:
             self.acquisition_running : bool = False
             self.n_channels : int = 1024
             self.arduino_port : str = "COM3"
-            self.baud : int = 9600
+            self.baud : int = 250000
             self.n_acquisitions : int = n_acquisitions
             self.t_acquisition : int = t_acquisition
             self.current_acq_duration : float = 0

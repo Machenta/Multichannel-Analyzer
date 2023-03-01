@@ -49,7 +49,8 @@ class DataRetriever:
             #reset the current acquisition dictionary
             #acquisition_parameters.create_dict()
             acquisition_parameters.clear_data_current_acq()
-            self.device.prepare_acquisition()
+            prep_con = self.device.prepare_acquisition()
+            return prep_con
 
       def set_save_directory(self, acquisition_parameters : AcquisitionParameters):
             #if the directory does not exist, create it
@@ -107,7 +108,12 @@ class DataRetriever:
             print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
 
             #Prepare the acquisition
-            self.prepare_acquisition(acquisition_parameters)
+            if not self.prepare_acquisition(acquisition_parameters):
+                  print("Error preparing acquisition")
+                  
+            else:
+                  print("Acquisition prepared successfully")
+
             #check condictions for acquisition
             #make sure the acquisition is supposed to be running 
             t_total_acq = 0
@@ -130,13 +136,22 @@ class DataRetriever:
                               #get the true time at the start of the acquisition from the timer process
                               t_iter_start = time.perf_counter_ns()
                               #print("t_iter_start=" + str(t_iter_start))
-
+                              t1=time.perf_counter()
                               val= self.get_data()
+                              t2=time.perf_counter()
+                              #if t2-t1 > 0.0001:
+                              #      print("t2-t1=" + str(t2-t1))
+                              if not (isinstance(val, (float,int)) or isinstance(val, int)):
+                                    print("type in error = " + str(type(val)))
+                              
+                              #print("val=" + str(val))
+                              #print("type=" + str(type(val)))
                               if val is not None:
                                     acquisition_parameters.update_for_single_pass(live_time, t_total_acq, val)
-
+                                    #print("val is not none")
                               else:
                                     acquisition_parameters.update_for_single_pass(live_time, t_total_acq, 0)
+                                    print("val is here")
 
                               run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]
 
@@ -162,6 +177,7 @@ class DataRetriever:
                   acquisition_parameters.set_live_time(live_time)
                   #save the acquisition
                   self.save_acquisition(acquisition_parameters)     
+                  #self.device.close_device()
                   #reset the running_acquisition flag
                   acquisition_parameters.set_acquisition_running(False)
 
