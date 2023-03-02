@@ -12,7 +12,7 @@ class AcquisitionParameters:
             self.acquisition_running : bool = False
             self.n_channels : int = 1024
             self.arduino_port : str = "COM3"
-            self.baud : int = 250000
+            self.baud : int = 1000000
             self.n_acquisitions : int = n_acquisitions
             self.t_acquisition : int = t_acquisition
             self.current_acq_duration : float = 0
@@ -297,3 +297,11 @@ class AcquisitionParameters:
             for key in range(self.n_channels):
                   self.current_acq[key] = 0
 
+      def restart_current_acq(self):
+            self.clear_data_current_acq()
+            self.current_acq_duration = 0.0
+            self.total_counts = 0
+            self.count_rate = 0.0
+            self.live_time = 0.0
+            self.clear_plot = True
+            self.restart = False

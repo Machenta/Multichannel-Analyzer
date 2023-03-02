@@ -7,7 +7,7 @@ import random
 #create serial object - Arduino
 class Arduino:
     def __init__(self, port : str = "COM3", 
-                    baud : int = 250000,
+                    baud : int = 1000000,
                     channels : int = 10):
                     
         self.port = port
@@ -22,7 +22,7 @@ class Arduino:
                 break
         self.ser = None
 
-    def get_arduino_baud_rate():
+    def get_arduino_baud_rate(self):
         arduino_ports = [
             p.device
             for p in serial.tools.list_ports.comports()
@@ -66,8 +66,6 @@ class Arduino:
             val = int(self.ser.readline().decode("utf-8").strip())
         else:
             val = 0
-        #get only the last number in the string
-        #val = random.randint(0, self.channels-1)
         return val
         
     def prepare_other_acquisition(self):
@@ -90,43 +88,54 @@ class Arduino:
 
 
     def prepare_acquisition(self):
-        #assess possible errors
+    # assess possible errors
         try:
             self.open_connection()
         except:
             print("Error opening connection to Arduino.")
             return False
-        
+        print("Successfully opened connection to Arduino.")
 
-        print("Serial buffer: " + str(self.ser))
-
-        #flush the serial buffer
-        #try: 
-        #    #only flush if there is something in the buffer
-        #    if self.ser.in_waiting > 0:
-        #        self.ser.flush()
-        #    else:
-        #        print("Nothing to flush.")
-        #except:
-        #    print("Error flushing serial buffer.")
-        #    return False
-        
+        # flush the serial buffer
         try: 
-            self.ser.reset_input_buffer()
-        except:
-            print("Error resetting input buffer.")
-            return False
-        
-        try:
-            self.ser.reset_output_buffer()
-        except:
-            print("Error resetting output buffer.")
-            return False
-        
+            # only flush if there is something in the buffer
+            if self.ser and self.ser.is_open and hasattr(self.ser, 'fileno'):
+                print("Serial buffer: " + str(self.ser.in_waiting))
+                if self.ser.in_waiting > 0:
+                    self.ser.flush()
+                else:
+                    print("Nothing to flush.")
+            else:
+                print("Serial connection not initialized or closed or has no file descriptor.")
 
-        #print the serial buffer
+        except:
+            print("Error flushing serial buffer.")
+            return False
+
+        #try: 
+        #    self.ser.reset_input_buffer()
+        #except:
+        #    print("Error resetting input buffer.")
+        #    return False
+#
+        #try:
+        #    self.ser.reset_output_buffer()
+        #except:
+        #    print("Error resetting output buffer.")
+        #    return False
+
+        # print the serial buffer
         #print("Serial buffer: " + str(self.ser.in_waiting))
         return True
+
+    def prep_connection(self):
+        #open the serial connection
+        try:
+            self.open_connection()
+        except:
+            print("Error opening connection to Arduino.")
+            return False
+
 
     def close_device(self):
         self.close_connection()
@@ -136,15 +145,17 @@ class Arduino:
 if __name__ == "__main__":
     dev = Arduino()
     dev.prepare_acquisition()
+    #b= dev.get_arduino_baud_rate()
+    #print("Arduino baud rate: " + str(b) + " baud.")
     for i in range(100):
         dev.read_serial()
         i+=1
         print(1)
-    #dev.close_device()
-    dev.prepare_other_acquisition()
-    time.sleep(2)
+    
+    #dev.prepare_other_acquisition()
+    time.sleep(1)
     for i in range(100):
-        print("Serial buffer1 : " + str(dev.ser.in_waiting))
+        #print("Serial buffer1 : " + str(dev.ser.in_waiting))
         a=dev.read_serial()
         print("a: " + str(a))
         i+=1

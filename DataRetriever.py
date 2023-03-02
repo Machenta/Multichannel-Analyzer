@@ -121,7 +121,9 @@ class DataRetriever:
             a=time.perf_counter()
             t_iter_start, t_iter_end = a,a
             
-            run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]
+            run_conditions = [acquisition_parameters.get_acquisition_running(), 
+                              acquisition_parameters.get_t_acquisition(), 
+                              acquisition_parameters.get_restart()]
             while acquisition_parameters.get_acquisition_running() == True:
 
                   #reset the current live time on the acquisition parameters
@@ -136,9 +138,11 @@ class DataRetriever:
                               #get the true time at the start of the acquisition from the timer process
                               t_iter_start = time.perf_counter_ns()
                               #print("t_iter_start=" + str(t_iter_start))
-                              t1=time.perf_counter()
+                              #t1=time.perf_counter()
                               val= self.get_data()
-                              t2=time.perf_counter()
+                              if run_conditions[2] == True:
+                                    t_total_acq = 0
+                              #t2=time.perf_counter()
                               #if t2-t1 > 0.0001:
                               #      print("t2-t1=" + str(t2-t1))
                               if not (isinstance(val, (float,int)) or isinstance(val, int)):
@@ -153,12 +157,15 @@ class DataRetriever:
                                     acquisition_parameters.update_for_single_pass(live_time, t_total_acq, 0)
                                     print("val is here")
 
-                              run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]
+                              run_conditions = [acquisition_parameters.get_acquisition_running(), 
+                                                acquisition_parameters.get_t_acquisition(), 
+                                                acquisition_parameters.get_restart()]
 
-                              #check to see if the clear button was pressed
-                              if acquisition_parameters.get_current_acq_duration == 0:
-                                    t_total_acq = 0
+                              #check if the acquisition is supposed to be restarted
 
+                              
+                              
+                              print("t_total_acq=" + str(t_total_acq))
 
                               t_iter_end = time.perf_counter_ns()
                               t_iter = (t_iter_end-t_iter_start)*1e-9
@@ -212,3 +219,11 @@ class DataRetriever:
                                     else:
                                           acquisition_parameters.set_acquisition_running(True)
                                     sleep(0.1)
+
+      def restart_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+            #first we set the current acquisition parameters back to default 
+            acquisition_parameters.restart_current_acq()
+            #give time for changes to propagate
+            time.sleep(0.1)
+            #then we set the acquisition running flag to true
+            acquisition_parameters.set_clear_plot(False)

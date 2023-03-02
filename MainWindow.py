@@ -198,7 +198,8 @@ class MainWindow(uiclass, baseclass):
       def clear_button_clicked(self, acq_params : AcquisitionParameters):
             print("clear button clicked")
             acq_params.set_clear_plot(True)
-            acq_params.reset_data()
+            #acq_params.reset_data()
+            acq_params.restart_current_acq()
             print("self.acq_params", acq_params.get_clear_plot())
 
       def lin_log_button_clicked(self, acq_params : AcquisitionParameters):
