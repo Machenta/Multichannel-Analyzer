@@ -165,7 +165,7 @@ class DataRetriever:
 
                               
                               
-                              print("t_total_acq=" + str(t_total_acq))
+                              #print("t_total_acq=" + str(t_total_acq))
 
                               t_iter_end = time.perf_counter_ns()
                               t_iter = (t_iter_end-t_iter_start)*1e-9

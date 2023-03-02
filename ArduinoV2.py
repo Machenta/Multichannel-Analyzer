@@ -63,7 +63,11 @@ class Arduino:
 
     def read_serial(self):
         if self.ser.in_waiting > 0:
-            val = int(self.ser.readline().decode("utf-8").strip())
+            try:
+                val = int(self.ser.readline().decode("utf-8").strip())
+            except ValueError:
+                print("Error decoding serial data.")
+                val = 0 
         else:
             val = 0
         return val
