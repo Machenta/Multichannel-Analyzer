@@ -2,13 +2,17 @@ import os
 import datetime as dt
 from dataclasses import field
 import csv
+import time
+
+
+
 
 class AcquisitionParameters:
       def __init__(self, n_acquisitions : int = 1, t_acquisition : float = 5):
             self.acquisition_running : bool = False
             self.n_channels : int = 1024
             self.arduino_port : str = "COM3"
-            self.baud : int = 9600
+            self.baud : int = 1000000
             self.n_acquisitions : int = n_acquisitions
             self.t_acquisition : int = t_acquisition
             self.current_acq_duration : float = 0
@@ -33,6 +37,7 @@ class AcquisitionParameters:
             self.window_is_open : bool = False
             self.selected_channel : int = 0
             self.selected_channel_counts : int = 0
+            self.count_rate : float = 0
 
 
             #self.create_dict
@@ -51,7 +56,7 @@ class AcquisitionParameters:
       def get_acquisition_running(self):
             return self.acquisition_running
       
-      def set_acquisition_running(self, value):
+      def set_acquisition_running(self, value : bool):
             self.acquisition_running = value
 
       def get_n_channels(self):
@@ -63,25 +68,25 @@ class AcquisitionParameters:
       def get_arduino_port(self):
             return self.arduino_port
 
-      def set_arduino_port(self, value):
+      def set_arduino_port(self, value : str):
             self.arduino_port = value
 
       def get_baud(self):
             return self.baud
 
-      def set_baud(self, value):
+      def set_baud(self, value : int):
             self.baud = value
 
       def get_n_acquisitions(self):
             return self.n_acquisitions
 
-      def set_n_acquisitions(self, value):
+      def set_n_acquisitions(self, value : int):
             self.n_acquisitions = value
 
       def get_t_acquisition(self):
             return self.t_acquisition
 
-      def set_t_acquisition(self, value):
+      def set_t_acquisition(self, value : int):
             self.t_acquisition = value
 
       def get_current_acq_duration(self):
@@ -225,16 +230,33 @@ class AcquisitionParameters:
       def set_selected_channel_counts(self, value : int):
             self.selected_channel_counts = value
 
-      def update_for_single_pass(self, live_time : float, t_total_acq : float, val : int):
-            if val != 0:
+      def get_count_rate(self):
+            return self.count_rate
+      
+      def set_count_rate(self, value : float):
+            self.count_rate = value
+
+      def update_for_single_pass(self, live_time : float, t_total_acq : float, channel : int):
+            if channel != 0:
                   self.total_counts += 1
+                  self.current_acq[channel] +=1
             
             self.live_time = live_time
             self.current_acq_duration = t_total_acq
+            self.count_rate = float(self.total_counts) / (self.current_acq_duration+0.000001)
+            
             
       def update_run_time_and_status(self, run_time : float, status : str):
             self.current_acq_duration = run_time
             self.acquisition_running = status
+
+      def reset_data(self):
+            self.current_acq = [0.01 for i in range(self.n_channels)]
+            self.t_acquisition = 0.0
+            self.total_counts = 0
+            self.count_rate = 0.0
+            self.current_acq_duration = 0.0
+            self.live_time = 0.0
 
       def create_header(self):
             h = ["ADC Channels: " +  str(self.n_channels),
@@ -275,3 +297,11 @@ class AcquisitionParameters:
             for key in range(self.n_channels):
                   self.current_acq[key] = 0
 
+      def restart_current_acq(self):
+            self.clear_data_current_acq()
+            self.current_acq_duration = 0.0
+            self.total_counts = 0
+            self.count_rate = 0.0
+            self.live_time = 0.0
+            self.clear_plot = True
+            self.restart = False

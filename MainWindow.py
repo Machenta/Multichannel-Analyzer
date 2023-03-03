@@ -26,7 +26,7 @@ class MainWindow(uiclass, baseclass):
             self.left = 50
             self.top = 50
             self.width = 1300
-            self.height = 1000
+            self.height = 900
             self.title = 'MainWindow'
             self.initPlot(AcquisitionParameters = acq_params)
 
@@ -198,6 +198,8 @@ class MainWindow(uiclass, baseclass):
       def clear_button_clicked(self, acq_params : AcquisitionParameters):
             print("clear button clicked")
             acq_params.set_clear_plot(True)
+            #acq_params.reset_data()
+            acq_params.restart_current_acq()
             print("self.acq_params", acq_params.get_clear_plot())
 
       def lin_log_button_clicked(self, acq_params : AcquisitionParameters):
@@ -223,15 +225,15 @@ class MainWindow(uiclass, baseclass):
             self.n_channels.setText(str(acq_params.get_n_channels()))
             self.n_acquisitions.setText(str(acq_params.get_n_acquisitions()))
             self.current_acquisition.setText(str(acq_params.get_current_n() ))
-            self.time_elapsed.setText(str(round(acq_params.get_current_acq_duration(),4)))
-            self.live_time.setText(str(round(acq_params.get_live_time() ,4)))
+            self.time_elapsed.setText(str(round(acq_params.get_current_acq_duration(),3)))
+            self.live_time.setText(str(round(acq_params.get_live_time() ,3)))
             self.total_counts.setText(str(acq_params.get_total_counts()))
-            cr= (acq_params.get_total_counts() / (acq_params.get_live_time()+0.00001))
+            cr= acq_params.get_count_rate()
             self.count_rate.setText(str(round(cr,2)))
 
             #self.threshold_entry.setText(str(acq_params.get_threshold()))
 
-            self.channel_select_counts.setText(str(acq_params.get_selected_channel_counts()))
+            self.channel_select_counts.setText(str(int(acq_params.get_selected_channel_counts())))
 
             #print("cr", cr)
       

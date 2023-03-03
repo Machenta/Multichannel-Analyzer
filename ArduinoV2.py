@@ -7,7 +7,7 @@ import random
 #create serial object - Arduino
 class Arduino:
     def __init__(self, port : str = "COM3", 
-                    baud : int = 9600,
+                    baud : int = 1000000,
                     channels : int = 10):
                     
         self.port = port
@@ -22,6 +22,27 @@ class Arduino:
                 break
         self.ser = None
 
+    def get_arduino_baud_rate(self):
+        arduino_ports = [
+            p.device
+            for p in serial.tools.list_ports.comports()
+            if 'Arduino' in p.description  # adjust this to match your board
+        ]
+        if not arduino_ports:
+            raise ValueError("No Arduino found")
+        # assume the first Arduino is the one we want to use
+        arduino_port = arduino_ports[0]
+        ser = serial.Serial(arduino_port)
+        ser.baudrate = 9600  # set a low baud rate to ensure command is received
+        ser.timeout = 1  # set a timeout in case command is not received
+        ser.write(b'AT+UART_CUR?\r\n')  # send the command to retrieve baud rate
+        response = ser.readline().decode().strip()
+        ser.close()
+        if not response.startswith('+UART_CUR:'):
+            raise ValueError("Unexpected response from Arduino: %s" % response)
+        baud_rate = int(response.split(':')[1])
+        return baud_rate
+
     def open_connection(self):
         if self.ser == None:
             self.ser = serial.Serial(self.port, self.baud)
@@ -30,42 +51,95 @@ class Arduino:
         print("Connected to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
 
     def close_connection(self):
-        if self.ser.is_open() == True:
+        #check if the serial connection exists
+        if self.ser != None:
             self.ser.close()
             print("Closed connection to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
+        #if self.ser.is_open() == True:
+        #    self.ser.close()
+        #    print("Closed connection to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
         else:
             print("No connection found to close.")    
 
     def read_serial(self):
-        #val = int(self.ser.readline().decode("utf-8").strip())
-        #get only the last number in the string
-        #get a random number according to a guassian distribution mean 5 standard deviation 1
-        val = random.randint(0, self.channels-1)
-        print(val)
-        #print(type(val))
-        j=0
-        for i in range(10):
-            j+=1
+        if self.ser.in_waiting > 0:
+            try:
+                val = int(self.ser.readline().decode("utf-8").strip())
+            except ValueError:
+                print("Error decoding serial data.")
+                val = 0 
+        else:
+            val = 0
         return val
         
-        #line = self.ser.readline().decode("utf-8").strip()
-        #if line:
-        #    try:
-        #        val = int(line)
-        #        #print(str(val) + str(type(val)))
-        #        #print(type(val))
-        #        return val
-        #    except ValueError:
-        #        pass
- 
-    
-    def prepare_acquisition(self):
+    def prepare_other_acquisition(self):
+        try: 
+            self.ser.reset_input_buffer()
+        except:
+            print("Error resetting input buffer.")
+            return False
         
-        self.open_connection()
-        self.ser.flush()
-        self.ser.reset_input_buffer()
-        self.ser.reset_output_buffer()
+        try:
+            self.ser.reset_output_buffer()
+        except:
+            print("Error resetting output buffer.")
+            return False
+        
+
+        #print the serial buffer
+        #print("Serial buffer: " + str(self.ser.in_waiting))
         return True
+
+
+    def prepare_acquisition(self):
+    # assess possible errors
+        try:
+            self.open_connection()
+        except:
+            print("Error opening connection to Arduino.")
+            return False
+        print("Successfully opened connection to Arduino.")
+
+        # flush the serial buffer
+        try: 
+            # only flush if there is something in the buffer
+            if self.ser and self.ser.is_open and hasattr(self.ser, 'fileno'):
+                print("Serial buffer: " + str(self.ser.in_waiting))
+                if self.ser.in_waiting > 0:
+                    self.ser.flush()
+                else:
+                    print("Nothing to flush.")
+            else:
+                print("Serial connection not initialized or closed or has no file descriptor.")
+
+        except:
+            print("Error flushing serial buffer.")
+            return False
+
+        #try: 
+        #    self.ser.reset_input_buffer()
+        #except:
+        #    print("Error resetting input buffer.")
+        #    return False
+#
+        #try:
+        #    self.ser.reset_output_buffer()
+        #except:
+        #    print("Error resetting output buffer.")
+        #    return False
+
+        # print the serial buffer
+        #print("Serial buffer: " + str(self.ser.in_waiting))
+        return True
+
+    def prep_connection(self):
+        #open the serial connection
+        try:
+            self.open_connection()
+        except:
+            print("Error opening connection to Arduino.")
+            return False
+
 
     def close_device(self):
         self.close_connection()
@@ -75,9 +149,20 @@ class Arduino:
 if __name__ == "__main__":
     dev = Arduino()
     dev.prepare_acquisition()
-    while True:
+    #b= dev.get_arduino_baud_rate()
+    #print("Arduino baud rate: " + str(b) + " baud.")
+    for i in range(100):
         dev.read_serial()
-    dev.close_device()
-
+        i+=1
+        print(1)
+    
+    #dev.prepare_other_acquisition()
+    time.sleep(1)
+    for i in range(100):
+        #print("Serial buffer1 : " + str(dev.ser.in_waiting))
+        a=dev.read_serial()
+        print("a: " + str(a))
+        i+=1
+        print(2)
 
 

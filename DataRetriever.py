@@ -1,11 +1,12 @@
 import ArduinoV2 as device
-from AcquisitionParams import *
+
 import multiprocessing
 import datetime as dt
 from time import sleep, time, perf_counter, perf_counter_ns
 import multiprocessing
 
 from Timer import *
+from AcquisitionParams import *
 
 class DataRetriever: 
       def __init__(self, 
@@ -48,7 +49,8 @@ class DataRetriever:
             #reset the current acquisition dictionary
             #acquisition_parameters.create_dict()
             acquisition_parameters.clear_data_current_acq()
-            self.device.prepare_acquisition()
+            prep_con = self.device.prepare_acquisition()
+            return prep_con
 
       def set_save_directory(self, acquisition_parameters : AcquisitionParameters):
             #if the directory does not exist, create it
@@ -106,68 +108,86 @@ class DataRetriever:
             print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
 
             #Prepare the acquisition
-            self.prepare_acquisition(acquisition_parameters)
+            if not self.prepare_acquisition(acquisition_parameters):
+                  print("Error preparing acquisition")
+                  
+            else:
+                  print("Acquisition prepared successfully")
+
             #check condictions for acquisition
             #make sure the acquisition is supposed to be running 
             t_total_acq = 0
-            t_total_acq1 = 0
             live_time = 0
+            a=time.perf_counter()
+            t_iter_start, t_iter_end = a,a
+            
+            run_conditions = [acquisition_parameters.get_acquisition_running(), 
+                              acquisition_parameters.get_t_acquisition(), 
+                              acquisition_parameters.get_restart()]
             while acquisition_parameters.get_acquisition_running() == True:
 
-                   #reset the current live time on the acquisition parameters
+                  #reset the current live time on the acquisition parameters
                   acquisition_parameters.set_live_time(0) 
                   #run the acquisition for the preset time
 
+
                   while (t_total_acq) < acquisition_parameters.get_t_acquisition():
-                        while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < acquisition_parameters.get_t_acquisition():
+                        #while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < t_acq:
+                        while run_conditions[0] == True and t_total_acq < run_conditions[1]:
                         #check the stop acquisition flag by evaluating the "acquisition_running" flag 
-
-
-
-                              #get the time at the start of the acquisition
-                              t_start = perf_counter()
-                              #with lock:
-                              #get the data from the arduino
-                              val = self.get_data()
-                              #update the current acquisition with the new data
-                              #acquisition_parameters.current_acq[int(val)] = val
-                              acquisition_parameters.update_current_acq_channel(val)
-                              #save the data
-                              print("Data: " + str(val))
-
-                              #get the time at the end of the acquisition
-                              t_end = perf_counter()
-                              #update the current acquisition duration with the time it took to get the data by adding the time it took to get the data
-
-                              t_total_acq += round(t_end-t_start,9)
-
-                              #subtract the dead time from the acquisition time of 100us
-                              live_time += (t_end-t_start) - 0.0001
-                              #update total counts in the acquisition
-                              t_start1 = perf_counter()
-                              print("t_loop: " + str(round(t_end-t_start,7)))
-                              #if val != 0:
-                              #      acquisition_parameters.update_total_counts()
-                              ##update the live time
-                              #acquisition_parameters.set_current_acq_duration(t_total_acq)
-                              #acquisition_parameters.set_live_time(live_time)
-                              acquisition_parameters.update_for_single_pass(live_time, t_total_acq, val)
-                              #print("t_total_acq: " + str(t_total_acq))
+                              #get the true time at the start of the acquisition from the timer process
+                              t_iter_start = time.perf_counter_ns()
+                              #print("t_iter_start=" + str(t_iter_start))
+                              #t1=time.perf_counter()
+                              val= self.get_data()
+                              if run_conditions[2] == True:
+                                    t_total_acq = 0
+                              #t2=time.perf_counter()
+                              #if t2-t1 > 0.0001:
+                              #      print("t2-t1=" + str(t2-t1))
+                              if not (isinstance(val, (float,int)) or isinstance(val, int)):
+                                    print("type in error = " + str(type(val)))
                               
-                              #print("t_acquisition: " + str(acquisition_parameters.get_t_acquisition()))
+                              #print("val=" + str(val))
+                              #print("type=" + str(type(val)))
+                              if val is not None:
+                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, val)
+                                    #print("val is not none")
+                              else:
+                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, 0)
+                                    print("val is here")
 
-                              t_end1 = perf_counter()
-                              t_total_acq1 = round(t_end1-t_start1,9)
-                              print("time to save data: " + str(t_total_acq1))
+                              run_conditions = [acquisition_parameters.get_acquisition_running(), 
+                                                acquisition_parameters.get_t_acquisition(), 
+                                                acquisition_parameters.get_restart()]
 
+                              #check if the acquisition is supposed to be restarted
+
+                              
+                              
+                              #print("t_total_acq=" + str(t_total_acq))
+
+                              t_iter_end = time.perf_counter_ns()
+                              t_iter = (t_iter_end-t_iter_start)*1e-9
+                              #print("t_iter_end  =" + str(t_iter_end))
+                              t_total_acq += t_iter
+
+                              
+                              #print("t_total_acq=" + str(t_total_acq))
+                              #print("t_iter=" + str(t_iter))
+                        run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]          
+                        #print("here")
+                        #print("t_total_acq=" + str(t_total_acq))
+                        #print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
                   #update the current acquisition duration with the time it took to get the data
                   acquisition_parameters.set_current_acq_duration(t_total_acq)
                   acquisition_parameters.set_live_time(live_time)
                   #save the acquisition
-                  self.save_acquisition(acquisition_parameters)        
+                  self.save_acquisition(acquisition_parameters)     
+                  #self.device.close_device()
                   #reset the running_acquisition flag
                   acquisition_parameters.set_acquisition_running(False)
-                  
+
 
 
       def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
@@ -199,3 +219,11 @@ class DataRetriever:
                                     else:
                                           acquisition_parameters.set_acquisition_running(True)
                                     sleep(0.1)
+
+      def restart_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+            #first we set the current acquisition parameters back to default 
+            acquisition_parameters.restart_current_acq()
+            #give time for changes to propagate
+            time.sleep(0.1)
+            #then we set the acquisition running flag to true
+            acquisition_parameters.set_clear_plot(False)

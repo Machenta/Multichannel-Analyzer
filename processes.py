@@ -22,7 +22,7 @@ from AcquisitionParams import *
 import ArduinoV2 as device
 from DataRetriever import *
 from MainWindow import *
-
+from Timer import *
 
 
 
@@ -87,9 +87,16 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
       app.aboutToQuit.connect(quit_application)
       sys.exit(app.exec()) 
 
-#def run_timer(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
-     #this is the timer that will be used to update the plot and keep track of acquisition times 
+def run_timer(lock: multiprocessing.Lock, timer : Timer):
+      #this is the timer that will be used to update the plot and keep track of acquisition times 
      
+      #print("Inside ")
+      timer.start_timer()
+
+      while True:
+            time.sleep(0.5)
+            timer.get_current_run_time()
+            #print(timer.get_current_run_time())
 
 if __name__ == "__main__":
       #create the manager
@@ -103,10 +110,13 @@ if __name__ == "__main__":
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
 
-      managed_acquisition_parameters.set_t_acquisition(400)
+      managed_acquisition_parameters.set_t_acquisition(40)
       managed_acquisition_parameters.set_n_acquisitions(2)
       managed_acquisition_parameters.set_n_channels(1024) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
+
+
+
 
       #create the acquisition parameters
       #managed_acquisition_parameters = AcquisitionParameters(t_acquisition=5)
@@ -125,6 +135,7 @@ if __name__ == "__main__":
       GUI_process.start()
       process.start()
       
+      
 
 
       #join the process
@@ -132,3 +143,4 @@ if __name__ == "__main__":
       #metrics_process.join()
       GUI_process.join()
       process.join()
+      
