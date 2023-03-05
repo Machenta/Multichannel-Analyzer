@@ -200,6 +200,7 @@ class MainWindow(uiclass, baseclass):
             acq_params.set_clear_plot(True)
             #acq_params.reset_data()
             acq_params.restart_current_acq()
+            acq_params.set_current_acq_duration(0)
             print("self.acq_params", acq_params.get_clear_plot())
 
       def lin_log_button_clicked(self, acq_params : AcquisitionParameters):

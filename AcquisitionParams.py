@@ -38,6 +38,8 @@ class AcquisitionParameters:
             self.selected_channel : int = 0
             self.selected_channel_counts : int = 0
             self.count_rate : float = 0
+            self.error_n : int = 0
+            self.error_rate : float = 0
 
 
             #self.create_dict
@@ -236,14 +238,30 @@ class AcquisitionParameters:
       def set_count_rate(self, value : float):
             self.count_rate = value
 
-      def update_for_single_pass(self, live_time : float, t_total_acq : float, channel : int):
-            if channel != 0:
-                  self.total_counts += 1
-                  self.current_acq[channel] +=1
+      def update_for_single_pass(self, live_time : float, t_total_acq : float, channel : int, error_n : int):
+            try:
+                  if channel != 0:
+                        self.total_counts += 1
+                        self.current_acq[channel] +=1
+
+                  self.error_n = error_n 
+                  self.error_rate = float(self.error_n) / (self.total_counts+0.000001)     
+            except:
+                  print("Error in update_for_single_pass for data update")
+                  print("Error_n: ", self.error_n)
+                  print("Error_rate: ", self.error_rate)
+                  pass
             
-            self.live_time = live_time
-            self.current_acq_duration = t_total_acq
-            self.count_rate = float(self.total_counts) / (self.current_acq_duration+0.000001)
+            try:
+                  self.live_time = live_time
+                  self.current_acq_duration = t_total_acq
+                  self.count_rate = float(self.total_counts) / (self.current_acq_duration+0.000001)
+            except:
+                  print("Error in update_for_single_pass")
+                  pass
+            #self.live_time = live_time
+            #self.current_acq_duration = t_total_acq
+            #self.count_rate = float(self.total_counts) / (self.current_acq_duration+0.000001)
             
             
       def update_run_time_and_status(self, run_time : float, status : str):
@@ -304,4 +322,4 @@ class AcquisitionParameters:
             self.count_rate = 0.0
             self.live_time = 0.0
             self.clear_plot = True
-            self.restart = False
+            self.restart = True

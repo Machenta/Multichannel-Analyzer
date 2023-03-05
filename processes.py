@@ -13,6 +13,9 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
 from PyQt6.QtGui import QPainter, QPen
 from PyQt6.QtCore import Qt, QTimer
+import atexit
+import os 
+import signal
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -40,7 +43,9 @@ def onclick(event : matplotlib.backend_bases.MouseEvent):
     return x_val1
 
 
-def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+def run(lock: multiprocessing.Lock, 
+        acquisition_parameters : AcquisitionParameters, 
+        stop_event : multiprocessing.Event):
 
       dev = device.Arduino(channels=acquisition_parameters.get_n_channels())
 
@@ -49,6 +54,7 @@ def run(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParamete
 
       data_retriever.get_multiple_acquisitions(lock, acquisition_parameters)
 
+
 def quit_application(*args, **kwargs):
       # Perform any necessary cleanup tasks here
 
@@ -56,14 +62,29 @@ def quit_application(*args, **kwargs):
             process.terminate()
       sys.exit()
 
-def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+
+
+
+
+
+def run_main_window(lock: multiprocessing.Lock, 
+                    acquisition_parameters : AcquisitionParameters,
+                    stop_event : multiprocessing.Event):
       app = QApplication(sys.argv)
       window = MainWindow(acquisition_parameters)
+      
+      # Connect a slot to the destroyed signal
+      window.destroyed.connect(lambda: print("Window closed"))
+      
       window.show()
       window.closeEvent = (quit_application)
       #window.windowClosed.connect(quit_application)
+
+      #check if the window is open
       def check_window_open():
+            #print(str(window.isVisible()))
             if window.isVisible():
+                  
                   #print("window open")
                   acquisition_parameters.set_window_is_open(True)
                   window.update_plot(acquisition_parameters)
@@ -72,45 +93,41 @@ def run_main_window(lock: multiprocessing.Lock, acquisition_parameters : Acquisi
                   #sleep(0.2)
                   QTimer.singleShot(10, check_window_open)
             else:
-                  #print("window closed")
+                  
                   acquisition_parameters.set_window_is_open(False)
                   window.update_plot(acquisition_parameters)
                   window.populate_metrics_grid(acquisition_parameters)
                   window.update_peak_counts(acquisition_parameters)
+                  stop_event.set()
+                  QTimer.singleShot(10, app.quit)
 
-      QTimer.singleShot(1, check_window_open)
-      print("Window is closed")
+      QTimer.singleShot(10, check_window_open)
 
       signal = AppSignal()
       signal.finished.connect(app.quit)
       app.aboutToQuit.connect(signal.finished.emit)
       app.aboutToQuit.connect(quit_application)
-      sys.exit(app.exec()) 
+      sys.exit(app.exec())   
 
-def run_timer(lock: multiprocessing.Lock, timer : Timer):
-      #this is the timer that will be used to update the plot and keep track of acquisition times 
-     
-      #print("Inside ")
-      timer.start_timer()
 
-      while True:
-            time.sleep(0.5)
-            timer.get_current_run_time()
-            #print(timer.get_current_run_time())
 
 if __name__ == "__main__":
       #create the manager
       #manager = multiprocessing.Manager()
       #manager.register('AcquisitionParameters', AcquisitionParameters)
       #create the lock
+
       lock = multiprocessing.Lock()
+
+      #create a multiprocessing event
+      stop_event = multiprocessing.Event()
 
       BaseManager.register('AcquisitionParameters', AcquisitionParameters)
       manager = BaseManager()
       manager.start()
       managed_acquisition_parameters = manager.AcquisitionParameters()
 
-      managed_acquisition_parameters.set_t_acquisition(40)
+      managed_acquisition_parameters.set_t_acquisition(400)
       managed_acquisition_parameters.set_n_acquisitions(2)
       managed_acquisition_parameters.set_n_channels(1024) 
       #managed_acquisition_parameters.set_default_save_folder("test_folder")
@@ -123,12 +140,8 @@ if __name__ == "__main__":
 
              
       #create the process
-      GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
-      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters))
-      #process_main_window = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters))
-      #create another process
-      #process2 = multiprocessing.Process(target=run2, args=(lock, managed_acquisition_parameters))
-
+      GUI_process = multiprocessing.Process(target=run_main_window, args=(lock, managed_acquisition_parameters, stop_event))
+      process = multiprocessing.Process(target=run, args=(lock, managed_acquisition_parameters, stop_event))
       
 
       #start the process
@@ -142,5 +155,4 @@ if __name__ == "__main__":
       
       #metrics_process.join()
       GUI_process.join()
-      process.join()
-      
+      process.terminate()

@@ -14,6 +14,7 @@ class Arduino:
         self.baud = baud
         self.channels = channels
         self.ports = list(serial.tools.list_ports.comports())
+        self.error_n : int = 0
         for port in self.ports:
             if "VID:PID" in port[2]:
                 self.port = port[0]
@@ -68,9 +69,15 @@ class Arduino:
             except ValueError:
                 print("Error decoding serial data.")
                 val = 0 
+                self.error_n += 1
         else:
-            val = 0
-        return val
+            try:
+                val = int(self.ser.readline().decode("utf-8").strip())
+            except ValueError:
+                print("Error decoding serial data.")
+                val = 0
+                self.error_n += 1
+        return val, self.error_n
         
     def prepare_other_acquisition(self):
         try: 
@@ -104,11 +111,12 @@ class Arduino:
         try: 
             # only flush if there is something in the buffer
             if self.ser and self.ser.is_open and hasattr(self.ser, 'fileno'):
-                print("Serial buffer: " + str(self.ser.in_waiting))
+                #print("Serial buffer: " + str(self.ser.in_waiting))
                 if self.ser.in_waiting > 0:
                     self.ser.flush()
                 else:
-                    print("Nothing to flush.")
+                    #print("Nothing to flush.")
+                    pass
             else:
                 print("Serial connection not initialized or closed or has no file descriptor.")
 

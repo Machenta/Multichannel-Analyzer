@@ -174,26 +174,26 @@ class Plotter(QWidget):
                   self.peak_region1 = pg.LinearRegionItem([user_entries.lower_peak1, user_entries.upper_peak1], pen=(247, 213, 149, 1), brush=(247, 213, 149, 100), movable=True, )
                   self.plot.addItem(self.peak_region1)
                   #label the region
-                  self.peak_region_label = pg.TextItem(text='Peak 1', color="black", anchor=(0.5,0.5))
-                  self.peak_region_label.setPos(user_entries.lower_peak1, 1.1*max(self.y_temp)+6)
-                  self.plot.addItem(self.peak_region_label)
+                  #self.peak_region_label = pg.TextItem(text='Peak 1', color="black", anchor=(0.5,0.5))
+                  #self.peak_region_label.setPos(user_entries.lower_peak1, 1.1*max(self.y_temp)+6)
+                  #self.plot.addItem(self.peak_region_label)
                   #account for the fact that the region is movable and set the peak accordingly
             else:
                   self.peak_region1.setRegion([user_entries.lower_peak1, user_entries.upper_peak1])
-                  self.peak_region_label.setPos((user_entries.lower_peak1+user_entries.upper_peak1)/2, 1.1*max(self.y_temp)+6)
+                  #self.peak_region_label.setPos((user_entries.lower_peak1+user_entries.upper_peak1)/2, 1.1*max(self.y_temp)+6)
 
             #create a linear region item to highlight the peak
             if not hasattr(self, 'peak_region2'):
                   self.peak_region2 = pg.LinearRegionItem([user_entries.lower_peak2, user_entries.upper_peak2], pen=(171,219,227,100), brush=(171,219,227,100), movable=True)
                   self.plot.addItem(self.peak_region2)
                   #label the region
-                  self.peak_region_label2 = pg.TextItem(text='Peak 2', color="black", anchor=(0.5,0.5))
-                  self.peak_region_label2.setPos(user_entries.lower_peak2, 1.1*max(self.y_temp)+6)
-                  self.plot.addItem(self.peak_region_label2)
+                  #self.peak_region_label2 = pg.TextItem(text='Peak 2', color="black", anchor=(0.5,0.5))
+                  #self.peak_region_label2.setPos(user_entries.lower_peak2, 1.1*max(self.y_temp)+6)
+                  #self.plot.addItem(self.peak_region_label2)
                   #account for the fact that the region is movable and set the peak accordingly
             else:
                   self.peak_region2.setRegion([user_entries.lower_peak2, user_entries.upper_peak2])
-                  self.peak_region_label2.setPos((user_entries.lower_peak2+user_entries.upper_peak2)/2, 1.1*max(self.y_temp)+6)
+                  #self.peak_region_label2.setPos((user_entries.lower_peak2+user_entries.upper_peak2)/2, 1.1*max(self.y_temp)+6)
 
 
             #sync the threshold with the main acquisition parameters object

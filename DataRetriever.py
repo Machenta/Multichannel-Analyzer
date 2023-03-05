@@ -120,6 +120,7 @@ class DataRetriever:
             live_time = 0
             a=time.perf_counter()
             t_iter_start, t_iter_end = a,a
+            err_n = 0
             
             run_conditions = [acquisition_parameters.get_acquisition_running(), 
                               acquisition_parameters.get_t_acquisition(), 
@@ -129,8 +130,8 @@ class DataRetriever:
                   #reset the current live time on the acquisition parameters
                   acquisition_parameters.set_live_time(0) 
                   #run the acquisition for the preset time
-
-
+                  print("Started acquisition: " + str(acquisition_parameters.get_current_filename()))
+                  print("len(run_conditions): "+str(len(run_conditions)))
                   while (t_total_acq) < acquisition_parameters.get_t_acquisition():
                         #while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < t_acq:
                         while run_conditions[0] == True and t_total_acq < run_conditions[1]:
@@ -139,9 +140,12 @@ class DataRetriever:
                               t_iter_start = time.perf_counter_ns()
                               #print("t_iter_start=" + str(t_iter_start))
                               #t1=time.perf_counter()
-                              val= self.get_data()
+                              val, err_n = self.get_data()
                               if run_conditions[2] == True:
                                     t_total_acq = 0
+                                    acquisition_parameters.set_current_acq_duration(0)
+                                    print("Restarting acquisition")
+                                    acquisition_parameters.set_restart(False)
                               #t2=time.perf_counter()
                               #if t2-t1 > 0.0001:
                               #      print("t2-t1=" + str(t2-t1))
@@ -151,10 +155,10 @@ class DataRetriever:
                               #print("val=" + str(val))
                               #print("type=" + str(type(val)))
                               if val is not None:
-                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, val)
+                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, val, err_n)
                                     #print("val is not none")
                               else:
-                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, 0)
+                                    acquisition_parameters.update_for_single_pass(live_time, t_total_acq, 0, err_n)
                                     print("val is here")
 
                               run_conditions = [acquisition_parameters.get_acquisition_running(), 
@@ -175,7 +179,10 @@ class DataRetriever:
                               
                               #print("t_total_acq=" + str(t_total_acq))
                               #print("t_iter=" + str(t_iter))
-                        run_conditions = [acquisition_parameters.get_acquisition_running(), acquisition_parameters.get_t_acquisition()]          
+                        run_conditions = [acquisition_parameters.get_acquisition_running(), 
+                                          acquisition_parameters.get_t_acquisition(),
+                                          acquisition_parameters.get_restart()
+                                          ]          
                         #print("here")
                         #print("t_total_acq=" + str(t_total_acq))
                         #print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
