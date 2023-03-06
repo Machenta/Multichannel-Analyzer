@@ -2,7 +2,6 @@ import os
 import datetime as dt
 from dataclasses import field
 import csv
-import time
 
 
 
@@ -27,7 +26,6 @@ class AcquisitionParameters:
             self.current_n : int =0
             self.live_time : float = 0
             self.current_acq : dict = {i: 0 for i in range(self.n_channels)}
-            #self.current_acq : dict = {}
             self.start_time : float = 0
             self.savefile_format : str = ".csv"
             self.plot_scale : str = "linear"
@@ -41,8 +39,6 @@ class AcquisitionParameters:
             self.error_n : int = 0
             self.error_rate : float = 0
 
-
-            #self.create_dict
 
       def update_with_inputs (self, parms ):
           self.n_acquisitions = parms.n_acquisitions

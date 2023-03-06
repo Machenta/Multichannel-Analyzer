@@ -1,22 +1,8 @@
-
 import pyqtgraph as pg
-import pyqtgraph.exporters
 import numpy as np
-from datetime import datetime as dt
-import time
-#import matplotlib.pyplot as plt
-import tkinter as tk
-from dataclasses import dataclass, field
-import matplotlib
-from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget
-from PyQt6.QtGui import QPainter, QPen
-from PyQt6.QtCore import Qt
-from time import sleep
+from PyQt6.QtWidgets import QVBoxLayout, QWidget
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
-
+#my imports 
 from AcquisitionParams import *
 
 class UserEntries():
@@ -117,11 +103,11 @@ class Plotter(QWidget):
                 self.plot.setLogMode(x=False, y=False)
                 self.plot.setYRange(0.0001,1.1*max(self.y_temp)+10)
 
-            #self.plot.getAxis("left").setScale(scale="log")
+            
+
             #adjust the range of the plot based on the user input
             #if either of the entries result in ValueError, we set the range to the default
             try:
-      
                   #if the entries are the same we set the range to the default
                   if user_entries.plot_min == user_entries.plot_max:
                         self.plot.setXRange(1, self.n_channels)

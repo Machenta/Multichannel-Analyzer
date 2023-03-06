@@ -1,10 +1,13 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QWidget, QTextEdit, QApplication, QFileDialog
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PyQt6 import QtWidgets, QtGui
+from PyQt6.QtWidgets import QApplication, QApplication, QFileDialog
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtGui import QColor
 import pyqtgraph as pg
+
+#my imports 
 from AcquisitionParams import *
 from PlotterQT import *
-from functools import partial
 
 uiclass, baseclass = pg.Qt.loadUiType("MainWindow.ui")
 
@@ -27,7 +30,7 @@ class MainWindow(uiclass, baseclass):
             self.top = 50
             self.width = 1300
             self.height = 900
-            self.title = 'MainWindow'
+            self.title = 'Multichannel Analyzer'
             self.initPlot(AcquisitionParameters = acq_params)
 
             #give functionality to the buttons in the GUI that are placed above the plot window
@@ -40,10 +43,15 @@ class MainWindow(uiclass, baseclass):
             #populate the metrics grid with the metrics that are available
             self.populate_metrics_grid(acq_params)
             
-            #create a timer that will update the plot every 100ms
-            #self.timer = QTimer()
-            #self.timer.timeout.connect(lambda: self.update_plot(acq_params))
-            #self.timer.start(100)
+            self.color_peak1=QColor(247, 213, 149,1)
+            self.color_peak2=QColor(171,219,227,100)
+
+            self.peak1_label.setStyleSheet(f'background-color: { self.color_peak1.name()};')
+            self.peak2_label.setStyleSheet(f'background-color: { self.color_peak2.name()};')
+
+            #use a custom window icon for the application
+            self.WindowIcon = QtGui.QIcon('Icon.png')
+            self.setWindowIcon(QtGui.QIcon('Icon.png'))
             
             #enable the text edits boxes 
             self.entry_boxes= [self.lower_peak1, self.upper_peak1, 
@@ -81,12 +89,10 @@ class MainWindow(uiclass, baseclass):
 
             self.actionAcquisition_Settings.triggered.connect(lambda: self.open_acquisition_settings(acq_params=acq_params))
 
+
+
+
       def initPlot(self, AcquisitionParameters: AcquisitionParameters):
-        #m = tests.Plotter(self.PlotdrawWidget, width=10, height=12)
-        #m.move(0,0)
-        #self.setWindowTitle(self.title)
-        #self.setGeometry(self.left, self.top, self.width, self.height)
-        #self.show()
 
             self.m = Plotter(acquisition_parameters =AcquisitionParameters, 
                         parent = self.PlotdrawWidget, 
@@ -137,7 +143,7 @@ class MainWindow(uiclass, baseclass):
 
       def text_changed_plot_min(self, text):
             #text = line_edit.text()
-            try:
+            try:  
                   self.user_entries.plot_min = int(text)
                   print(f"Text changed: {text}")
             except ValueError:
@@ -341,7 +347,8 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
             self.default_filename_entry.setText(str(acq_params.get_default_filename()))
             self.directory_entry.setText(str(acq_params.get_acquisition_filesave_directory()))
 
-
+            self.WindowIcon = QtGui.QIcon('Icon.png')
+            self.setWindowIcon(QtGui.QIcon('Icon.png'))
             #give functionality to the QPushButtons
 
             self.select_directory_button.clicked.connect(lambda: self.directory_button_clicked(acq_params= acq_params))

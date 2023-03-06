@@ -1,7 +1,6 @@
 import serial
 import time
 import serial.tools.list_ports
-import random
 
 
 #create serial object - Arduino
@@ -23,26 +22,6 @@ class Arduino:
                 break
         self.ser = None
 
-    def get_arduino_baud_rate(self):
-        arduino_ports = [
-            p.device
-            for p in serial.tools.list_ports.comports()
-            if 'Arduino' in p.description  # adjust this to match your board
-        ]
-        if not arduino_ports:
-            raise ValueError("No Arduino found")
-        # assume the first Arduino is the one we want to use
-        arduino_port = arduino_ports[0]
-        ser = serial.Serial(arduino_port)
-        ser.baudrate = 9600  # set a low baud rate to ensure command is received
-        ser.timeout = 1  # set a timeout in case command is not received
-        ser.write(b'AT+UART_CUR?\r\n')  # send the command to retrieve baud rate
-        response = ser.readline().decode().strip()
-        ser.close()
-        if not response.startswith('+UART_CUR:'):
-            raise ValueError("Unexpected response from Arduino: %s" % response)
-        baud_rate = int(response.split(':')[1])
-        return baud_rate
 
     def open_connection(self):
         if self.ser == None:

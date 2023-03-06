@@ -1,11 +1,11 @@
-import ArduinoV2 as device
+import Arduino as device
 
 import multiprocessing
 import datetime as dt
 from time import sleep, time, perf_counter, perf_counter_ns
 import multiprocessing
 
-from Timer import *
+#my imports 
 from AcquisitionParams import *
 
 class DataRetriever: 
@@ -15,6 +15,7 @@ class DataRetriever:
 
 
             self.device = device
+            self.device.channels = acquisition_parameters.get_n_channels()
             self.val=0
             self.t_start = 0
             self.t_end = 0
@@ -104,7 +105,7 @@ class DataRetriever:
                               acquisition_parameters.update_for_single_pass(self.t_total_acq, self.t_total_acq, self.val,)
 
 
-      def get_one_full_acquisition(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+      def get_one_full_acquisition(self, acquisition_parameters : AcquisitionParameters):
             print("Acquisition running: " + str(acquisition_parameters.get_acquisition_running()))
 
             #Prepare the acquisition
@@ -118,7 +119,7 @@ class DataRetriever:
             #make sure the acquisition is supposed to be running 
             t_total_acq = 0
             live_time = 0
-            a=time.perf_counter()
+            a=perf_counter()
             t_iter_start, t_iter_end = a,a
             err_n = 0
             
@@ -131,13 +132,12 @@ class DataRetriever:
                   acquisition_parameters.set_live_time(0) 
                   #run the acquisition for the preset time
                   print("Started acquisition: " + str(acquisition_parameters.get_current_filename()))
-                  print("len(run_conditions): "+str(len(run_conditions)))
                   while (t_total_acq) < acquisition_parameters.get_t_acquisition():
                         #while acquisition_parameters.get_acquisition_running() == True and (t_total_acq) < t_acq:
                         while run_conditions[0] == True and t_total_acq < run_conditions[1]:
                         #check the stop acquisition flag by evaluating the "acquisition_running" flag 
                               #get the true time at the start of the acquisition from the timer process
-                              t_iter_start = time.perf_counter_ns()
+                              t_iter_start = perf_counter_ns()
                               #print("t_iter_start=" + str(t_iter_start))
                               #t1=time.perf_counter()
                               val, err_n = self.get_data()
@@ -171,7 +171,7 @@ class DataRetriever:
                               
                               #print("t_total_acq=" + str(t_total_acq))
 
-                              t_iter_end = time.perf_counter_ns()
+                              t_iter_end = perf_counter_ns()
                               t_iter = (t_iter_end-t_iter_start)*1e-9
                               #print("t_iter_end  =" + str(t_iter_end))
                               t_total_acq += t_iter
@@ -197,7 +197,7 @@ class DataRetriever:
 
 
 
-      def get_multiple_acquisitions(self, lock : multiprocessing.Lock, acquisition_parameters : AcquisitionParameters):
+      def get_multiple_acquisitions(self, acquisition_parameters : AcquisitionParameters):
             #getting multiple acquisitions is just a loop of get_one_full_acquisition
             while True:
                   while acquisition_parameters.get_window_is_open() == True:
@@ -211,7 +211,7 @@ class DataRetriever:
                                     # we need to reset the running_acquisition flag to true
                                     print("Starting acquisition: " + str(acquisition_parameters.get_current_n()) + " of " + str(acquisition_parameters.get_n_acquisitions()))
 
-                                    self.get_one_full_acquisition(lock , acquisition_parameters)
+                                    self.get_one_full_acquisition(acquisition_parameters)
                                     #update the current acquisition number
                                     n += 1
                                     acquisition_parameters.set_current_n(n)
