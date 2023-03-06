@@ -35,7 +35,6 @@ class MainWindow(uiclass, baseclass):
 
             #give functionality to the buttons in the GUI that are placed above the plot window
             self.start_button.clicked.connect(lambda: self.start_button_clicked(acq_params))
-            #self.restart_button.clicked.connect(lambda: self.restart_button_clicked(acq_params))
             self.stop_button.clicked.connect(lambda: self.stop_button_clicked(acq_params))
             self.clear_button.clicked.connect(lambda: self.clear_button_clicked(acq_params))
             self.lin_log_button.clicked.connect(lambda: self.lin_log_button_clicked(acq_params))
@@ -106,7 +105,6 @@ class MainWindow(uiclass, baseclass):
             self.PlotdrawWidget.setLayout(self.layout)
 
       def text_changed_upper_peak1(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.upper_peak1 = int(text)
                   print(f"Text changed upper_peak1: {self.user_entries.upper_peak1}")
@@ -115,7 +113,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.upper_peak1 = 0
       
       def text_changed_upper_peak2(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.upper_peak2 = int(text)
                   print(f"Text changed: {text}")
@@ -124,7 +121,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.upper_peak2 = 0
 
       def text_changed_lower_peak1(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.lower_peak1 = int(text)
                   print(f"Text changed: {text}")
@@ -133,7 +129,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.lower_peak1 = 0
 
       def text_changed_lower_peak2(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.lower_peak2 = int(text)
                   print(f"Text changed: {text}")
@@ -142,7 +137,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.lower_peak2 = 0
 
       def text_changed_plot_min(self, text):
-            #text = line_edit.text()
             try:  
                   self.user_entries.plot_min = int(text)
                   print(f"Text changed: {text}")
@@ -151,8 +145,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.plot_min = 0
 
       def text_changed_plot_max(self, text):
-
-            #text = line_edit.text()
             try:
                   self.user_entries.plot_max = int(text)
                   print(f"Text changed: {text}")
@@ -161,7 +153,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.plot_max = 0
 
       def text_changed_channel_select(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.channel_select = int(text)
                   print(f"Text changed: {text}")
@@ -170,7 +161,6 @@ class MainWindow(uiclass, baseclass):
                   self.user_entries.channel_select = 0
 
       def text_changed_threshold(self, text):
-            #text = line_edit.text()
             try:
                   self.user_entries.threshold = int(text)
                   print(f"Text changed: {text}")
@@ -190,11 +180,6 @@ class MainWindow(uiclass, baseclass):
             acq_params.set_acquisition_running(True)
             print("self.acq_params", acq_params.get_acquisition_running())
             print("start button clicked")
-      
-      #def restart_button_clicked(self, acq_params : AcquisitionParameters):
-      #      print("restart button clicked")
-      #      acq_params.set_restart(True)
-      #      print("self.acq_params", acq_params.get_restart())
 
       def stop_button_clicked(self, acq_params : AcquisitionParameters):
             print("stop button clicked")
@@ -217,7 +202,6 @@ class MainWindow(uiclass, baseclass):
                   acq_params.set_plot_scale("linear")      
 
       def populate_metrics_grid(self, acq_params : AcquisitionParameters):
-            #print("populate metrics grid")
 
             if acq_params.get_acquisition_running():
                   self.acquisition_status.setText("Running")
@@ -238,12 +222,7 @@ class MainWindow(uiclass, baseclass):
             cr= acq_params.get_count_rate()
             self.count_rate.setText(str(round(cr,2)))
 
-            #self.threshold_entry.setText(str(acq_params.get_threshold()))
-
             self.channel_select_counts.setText(str(int(acq_params.get_selected_channel_counts())))
-
-            #print("cr", cr)
-      
 
       def update_peak_counts(self, acq_params : AcquisitionParameters):
             #calculate the peak counts for the entire peak based on the user entries for the upper and lower limits
@@ -257,8 +236,6 @@ class MainWindow(uiclass, baseclass):
                   x = np.array([self.user_entries.lower_peak1, self.user_entries.upper_peak1])
                   y = np.array([acq_params.get_current_acq_channel(self.user_entries.lower_peak1), acq_params.get_current_acq_channel(self.user_entries.upper_peak1)])
                   m, b = np.polyfit(x, y, 1)
-                  #print("m", m)
-                  #print("b", b)
 
                   #subtracting the background from the peak
 
@@ -286,8 +263,6 @@ class MainWindow(uiclass, baseclass):
                   x = np.array([self.user_entries.lower_peak2, self.user_entries.upper_peak2])
                   y = np.array([acq_params.get_current_acq_channel(self.user_entries.lower_peak2), acq_params.get_current_acq_channel(self.user_entries.upper_peak2)])
                   m, b = np.polyfit(x, y, 1)
-                  #print("m", m)
-                  #print("b", b)
 
                   #subtracting the background from the peak
                   for i in range(self.user_entries.lower_peak2, self.user_entries.upper_peak2):
@@ -355,7 +330,6 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
             self.single_run_button.clicked.connect(lambda: self.disable_acquisition_run_params(acq_params= acq_params))
 
       def text_changed_t_acquisition(self, text, acq_params : AcquisitionParameters):
-            #text = line_edit.text()
             try:
                   self.t_acquisition = int(text)
                   acq_params.set_t_acquisition(self.t_acquisition)
@@ -365,7 +339,6 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
                   self.t_acquisition = 0
 
       def text_changed_n_acquisitions(self, text, acq_params : AcquisitionParameters):
-            #text = line_edit.text()
             try:
                   self.n_acquisitions = int(text)
                   acq_params.set_n_acquisitions(self.n_acquisitions)
@@ -376,7 +349,6 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
 
 
       def text_changed_default_filename(self, text, acq_params : AcquisitionParameters):
-            #text = line_edit.text()
             try:
                   self.default_filename = str(text)
                   print(f"Text changed: {text}")
@@ -386,7 +358,6 @@ class AcquisitionSettingsWindow(acquisitionsettings_ui, acquisitionsettings_base
                   self.default_filename = "default_filename"
 
       def text_changed_directory(self, text, acq_params : AcquisitionParameters):
-            #text = line_edit.text()
             try:
                   self.directory = str(text)
                   print(f"Text changed: {text}")

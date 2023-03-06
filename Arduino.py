@@ -14,10 +14,10 @@ class Arduino:
         self.channels = channels
         self.ports = list(serial.tools.list_ports.comports())
         self.error_n : int = 0
+        #auto detect the port
         for port in self.ports:
             if "VID:PID" in port[2]:
                 self.port = port[0]
-                
                 print("Detected arduino at port: " + self.port)
                 break
         self.ser = None
@@ -35,9 +35,6 @@ class Arduino:
         if self.ser != None:
             self.ser.close()
             print("Closed connection to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
-        #if self.ser.is_open() == True:
-        #    self.ser.close()
-        #    print("Closed connection to Arduino port: " + self.port + " at " + str(self.baud) + " baud.")
         else:
             print("No connection found to close.")    
 
@@ -70,10 +67,6 @@ class Arduino:
         except:
             print("Error resetting output buffer.")
             return False
-        
-
-        #print the serial buffer
-        #print("Serial buffer: " + str(self.ser.in_waiting))
         return True
 
 
@@ -90,11 +83,9 @@ class Arduino:
         try: 
             # only flush if there is something in the buffer
             if self.ser and self.ser.is_open and hasattr(self.ser, 'fileno'):
-                #print("Serial buffer: " + str(self.ser.in_waiting))
                 if self.ser.in_waiting > 0:
                     self.ser.flush()
                 else:
-                    #print("Nothing to flush.")
                     pass
             else:
                 print("Serial connection not initialized or closed or has no file descriptor.")
@@ -102,21 +93,6 @@ class Arduino:
         except:
             print("Error flushing serial buffer.")
             return False
-
-        #try: 
-        #    self.ser.reset_input_buffer()
-        #except:
-        #    print("Error resetting input buffer.")
-        #    return False
-#
-        #try:
-        #    self.ser.reset_output_buffer()
-        #except:
-        #    print("Error resetting output buffer.")
-        #    return False
-
-        # print the serial buffer
-        #print("Serial buffer: " + str(self.ser.in_waiting))
         return True
 
     def prep_connection(self):

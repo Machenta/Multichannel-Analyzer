@@ -83,17 +83,11 @@ class Plotter(QWidget):
       def redraw_plot(self, acquisition_parameters : AcquisitionParameters, user_entries : UserEntries):
             #now we take the y_temp that we have updated and we plot it
             #along with all other elements such as threshold line and cursor line
-            #time the update of the plot
-            #start_time = time.time()
 
 
             self.update_y_data(acquisition_parameters)
             #now we update the plot with the new data
             self.c1.setData(y= self.y_temp)
-            
-            #self.plot.getAxis("left").setLimits(min=0.01, max=1.1*max(self.y_temp)+10)
-            #print data to console
-            #print("y_temp: " + str(self.y_temp))
             
             if acquisition_parameters.get_plot_scale() == "log":
                 self.plot.setLogMode(x=False, y=True)
@@ -113,6 +107,12 @@ class Plotter(QWidget):
                         self.plot.setXRange(1, self.n_channels)
                         #update the user entries with the new range
                         user_entries.plot_min = 1
+                        user_entries.plot_max = self.n_channels
+
+                  elif user_entries.plot_min > user_entries.plot_max:
+                        self.plot.setXRange(1, self.n_channels)
+                        #update the user entries with the new range
+                        #user_entries.plot_min = 1
                         user_entries.plot_max = self.n_channels
                   else:
                         self.plot.setXRange(user_entries.plot_min, user_entries.plot_max)
@@ -184,8 +184,6 @@ class Plotter(QWidget):
 
             #sync the threshold with the main acquisition parameters object
             acquisition_parameters.set_threshold(user_entries.threshold)
-            #t_end = time.time()
-            #print(f"Time to update plot: {t_end-start_time}")
 
       def get_point(self):
             return self.cursor_line.getPos()
